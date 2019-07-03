@@ -249,14 +249,14 @@ hold on
 % This a trick to ensure that the most important structures lie on top of
 % the qraph, and still create an understandable legend
 for Idx = 1:NumberOfStructs
-    plot(DVHAxes, 0, 0, 'Visible', 'off', 'Color', Colour(mod(Idx-1, size(Colour, 1))+1, :), 'LineStyle', '-', 'LineWidth', 4, 'Marker', 'none');
+    plot(DVHAxes, -1, -1, 'Visible', 'on', 'Color', Colour(mod(Idx-1, size(Colour, 1))+1, :), 'LineStyle', '-', 'LineWidth', 4, 'Marker', 'none');
 end
 if NumberOfPlans>1 && ~Interactive
-    plot(DVHAxes, 0, 0, 'Visible', 'off', 'Color', [1 1 1], 'LineStyle', '-', 'LineWidth', 0.1, 'Marker', 'none');
+    plot(DVHAxes, -1, -1, 'Visible', 'on', 'Color', [1 1 1], 'LineStyle', '-', 'LineWidth', 0.1, 'Marker', 'none');
     VolumeNames{end+1} = '';
     for LIdx = 1:NumberOfPlans
         StyleIdx = mod(LIdx - 1, length(LineStyles)) + 1;
-        plot(DVHAxes, 0, 0, 'Visible', 'off', 'Color', [0 0 0], 'LineStyle', LineStyles{StyleIdx}, 'LineWidth', 4, 'Marker', 'none');
+        plot(DVHAxes, -1, -1, 'Visible', 'on', 'Color', [0 0 0], 'LineStyle', LineStyles{StyleIdx}, 'LineWidth', 4, 'Marker', 'none');
         VolumeNames{end+1} = sprintf('Plan %d', LIdx);
     end
 end
