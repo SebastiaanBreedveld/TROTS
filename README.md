@@ -1,6 +1,6 @@
-# TROTS
+# TROTS - The Radiotherapy Optimisation Test Set
 #
-# The Radiotherapy Optimisation Test Set (TROTS) is an extensive set of problems originating from radiation therapy treatment planning.
+# TROTS is an extensive set of problems originating from radiation therapy treatment planning.
 #
 # To start you up, some basic scripts are provided to work with the data. While the dataset itself is static, scripts are subjected to improvement.
 #
