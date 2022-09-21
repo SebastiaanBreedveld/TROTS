@@ -9,7 +9,7 @@ import h5py
 
 def get_h5py_struct_array_value(f, structname, fieldname, idx):
     ref = f[structname][fieldname][idx,0]
-    val = f[ref].value
+    val = f[ref][()]
     return val
 
 # =============================================================================
@@ -46,9 +46,9 @@ for i in range(len(f['problem']['dataID'])):
     if f[ref].attrs.get('MATLAB_class') == b'double':
         # dose matrix is in sparse format, so we can simply copy the
         # nonzero elements and their indices
-        A['data'].append(factor*f[ref]['data'].value)
-        A['row_ind'].append(row_offset + f[ref]['ir'].value)
-        jc = f[ref]['jc'].value
+        A['data'].append(factor*f[ref]['data'][()])
+        A['row_ind'].append(row_offset + f[ref]['ir'][()])
+        jc = f[ref]['jc'][()]
         # decompress compressed column indices
         col_ind = np.zeros(jc[-1], dtype=np.uint64)
         for j in range(len(jc)-1):
@@ -62,7 +62,7 @@ for i in range(len(f['problem']['dataID'])):
         
     else:
         # dose matrix is in dense format and is transposed
-        DT = f[ref].value
+        DT = f[ref][()]
         (num_pencil_beams,num_voxels) = DT.shape
         (col_ind,row_ind) = np.nonzero(DT)
         A['data'].append(factor*DT[col_ind, row_ind])
