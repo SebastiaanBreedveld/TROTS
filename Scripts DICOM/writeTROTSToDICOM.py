@@ -8,6 +8,7 @@ import pydicom._storage_sopclass_uids
 from rt_utils import RTStructBuilder
 from PIL import Image, ImageDraw
 import csv
+import matplotlib.pyplot as plt
 
 flipAxes = True
 
@@ -16,7 +17,7 @@ patientIndexTot = 1
 for folder in caseFolders:
     matfiles = [f.name for f in os.scandir('./'+folder)]
     for matFile in matfiles:
-        print(folder, matFile)
+        print('Folder and file:', folder, matFile)
         patientIndexInt = matfiles.index(matFile) + 1
         patientFolder = folder + str(patientIndexInt) 
         if patientFolder not in [f.name for f in os.scandir('./DICOMs/')]:
@@ -119,19 +120,21 @@ for folder in caseFolders:
             structBinMap = np.zeros(mat['patient']['CT'].shape)
             for sliceIndex in range(0, len(mat['patient']['Contours'][0])):
                 if mat['patient']['Contours'][0][sliceIndex][structIndex] != None:
-                    if flipAxes:
-                        X = [mat['patient']['Contours'][0][sliceIndex][structIndex][0][valueIndex][1]/mat['patient']['Resolution'][0]-mat['patient']['Offset'][0]/mat['patient']['Resolution'][0] for valueIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex][0]))]
-                        Y = [mat['patient']['Contours'][0][sliceIndex][structIndex][0][valueIndex][0]/mat['patient']['Resolution'][1]-mat['patient']['Offset'][1]/mat['patient']['Resolution'][1] for valueIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex][0]))]
-                    else:
-                        X = [mat['patient']['Contours'][0][sliceIndex][structIndex][0][valueIndex][0]/mat['patient']['Resolution'][0]-mat['patient']['Offset'][0]/mat['patient']['Resolution'][0] for valueIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex][0]))] 
-                        Y = [mat['patient']['Contours'][0][sliceIndex][structIndex][0][valueIndex][1]/mat['patient']['Resolution'][1]-mat['patient']['Offset'][1]/mat['patient']['Resolution'][1] for valueIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex][0]))]
-                    polygon = [(Y[valueIndex], X[valueIndex]) for valueIndex in range(0, len(X))] 
-                    width = structBinMap.shape[1]
-                    height = structBinMap.shape[0] 
-                    img = Image.new('L', (width, height), 0)
-                    ImageDraw.Draw(img).polygon(polygon, outline=1, fill=1)
-                    mask = np.array(img)
-                    structBinMap[:,:,sliceIndex] = mask
+                    for subStructIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex])): 
+                        if flipAxes:
+                            X = [mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex][valueIndex][1]/mat['patient']['Resolution'][0]-mat['patient']['Offset'][0]/mat['patient']['Resolution'][0] for valueIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex]))]
+                            Y = [mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex][valueIndex][0]/mat['patient']['Resolution'][1]-mat['patient']['Offset'][1]/mat['patient']['Resolution'][1] for valueIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex]))]
+                        else:
+                            X = [mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex][valueIndex][0]/mat['patient']['Resolution'][0]-mat['patient']['Offset'][0]/mat['patient']['Resolution'][0] for valueIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex]))] 
+                            Y = [mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex][valueIndex][1]/mat['patient']['Resolution'][1]-mat['patient']['Offset'][1]/mat['patient']['Resolution'][1] for valueIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex]))]
+                        polygon = [(Y[valueIndex], X[valueIndex]) for valueIndex in range(0, len(X))] 
+                        width = structBinMap.shape[1]
+                        height = structBinMap.shape[0] 
+                        img = Image.new('L', (width, height), 0)
+                        ImageDraw.Draw(img).polygon(polygon, outline=1, fill=1)
+                        mask = np.array(img)
+                        structBinMap[:,:,sliceIndex] += mask
+            structBinMap[np.where(structBinMap > 0)] = 1
             structBinMap = np.array(structBinMap, dtype = bool)
             rtstruct.add_roi(
               mask = structBinMap, 
