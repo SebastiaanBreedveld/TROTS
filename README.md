@@ -8,8 +8,5 @@
 #
 # The project pages and data can be found here by following these links:
 #
-# RePub:      https://hdl.handle.net/1765/116520
-# Erasmus MC: https://www6.erasmusmc.nl/radiotherapytrots/
-# Mirror:     https://sebastiaanbreedveld.nl/trots/
-# Data:       https://doi.org/10.5281/zenodo.2708302
+# Project website:     https://sebastiaanbreedveld.nl/trots/
 #
