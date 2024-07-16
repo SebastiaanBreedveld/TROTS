@@ -205,7 +205,7 @@ dij.numOfScenarios     = 1; % for the moment we exclude the 9 scenarios TROTS
 dij.numOfRaysPerBeam   = patient.Beams.ElementIndex;
 dij.totalNumOfBixels   = spots;% sum([stf(:).totalNumOfBixels]);
 dij.totalNumOfRays     = sum(dij.numOfRaysPerBeam);
-if contains(patientFolder,'Proton', 'IgnoreCase', true)
+if contains(TROTSMatFile, 'Proton', 'IgnoreCase', true)
     dij.RBE = 1.1;
 end
 dij.bixelNum = ones(spots,1);
