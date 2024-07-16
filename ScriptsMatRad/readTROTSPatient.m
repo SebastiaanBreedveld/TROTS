@@ -178,6 +178,8 @@ pln.machine = 'Generic';
 pln.propOpt.runDAO = 0;
 pln.propOpt.runSequencing = 0;
 
+% Here you can open matRadGUI if you want for cross-check geometry
+
 %% Pass patient TROTS Dij to MATLAB
 
 spots = size(solutionX, 1);
