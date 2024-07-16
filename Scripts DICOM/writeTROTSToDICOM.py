@@ -26,8 +26,6 @@ for folder in caseFolders:
         mat = mat73.loadmat('./'+folder+'/'+matFile)
         if flipAxes:
             mat['patient']['CT'] = np.swapaxes(mat['patient']['CT'], 0, 1)
-            mat['patient']['Offset'] = [mat['patient']['Offset'][1],mat['patient']['Offset'][0],mat['patient']['Offset'][2]]
-            mat['patient']['Resolution'] = [mat['patient']['Resolution'][1],mat['patient']['Resolution'][0],mat['patient']['Resolution'][2]]
    
         # write planning objectives into csv
         with open("./DICOMs/"+patientFolder+'/planning.csv', 'w', newline = '') as csvfile:
@@ -89,7 +87,7 @@ for folder in caseFolders:
 
             ds.InstanceNumber = sliceIndex + 1
             ds.PatientPosition = 'HFS'
-            ds.ImagePositionPatient = [mat['patient']['Offset'][0], mat['patient']['Offset'][1], mat['patient']['Offset'][2] - mat['patient']['Resolution'][2]*(np.array(mat['patient']['CT']).shape[2]-1-sliceIndex)] 
+            ds.ImagePositionPatient = [mat['patient']['Offset'][0], mat['patient']['Offset'][1], mat['patient']['Offset'][2] + mat['patient']['Resolution'][2]*(np.array(mat['patient']['CT']).shape[2]-1-sliceIndex)] 
             ds.ImageOrientationPatient = [1.000000, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000] 
 
             ds.SamplesPerPixel = 1
@@ -121,12 +119,8 @@ for folder in caseFolders:
             for sliceIndex in range(0, len(mat['patient']['Contours'][0])):
                 if mat['patient']['Contours'][0][sliceIndex][structIndex] != None:
                     for subStructIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex])): 
-                        if flipAxes:
-                            X = [mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex][valueIndex][1]/mat['patient']['Resolution'][0]-mat['patient']['Offset'][0]/mat['patient']['Resolution'][0] for valueIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex]))]
-                            Y = [mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex][valueIndex][0]/mat['patient']['Resolution'][1]-mat['patient']['Offset'][1]/mat['patient']['Resolution'][1] for valueIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex]))]
-                        else:
-                            X = [mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex][valueIndex][0]/mat['patient']['Resolution'][0]-mat['patient']['Offset'][0]/mat['patient']['Resolution'][0] for valueIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex]))] 
-                            Y = [mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex][valueIndex][1]/mat['patient']['Resolution'][1]-mat['patient']['Offset'][1]/mat['patient']['Resolution'][1] for valueIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex]))]
+                        X = [(mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex][valueIndex][0]-mat['patient']['Offset'][0])/mat['patient']['Resolution'][0] for valueIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex]))] 
+                        Y = [(mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex][valueIndex][1]-mat['patient']['Offset'][1])/mat['patient']['Resolution'][1] for valueIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex]))]
                         polygon = [(Y[valueIndex], X[valueIndex]) for valueIndex in range(0, len(X))] 
                         width = structBinMap.shape[1]
                         height = structBinMap.shape[0] 
