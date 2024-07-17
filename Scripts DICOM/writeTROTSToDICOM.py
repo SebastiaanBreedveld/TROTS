@@ -19,7 +19,8 @@ for folder in caseFolders:
     for matFile in matfiles:
         print('Folder and file:', folder, matFile)
         patientIndexInt = matfiles.index(matFile) + 1
-        patientFolder = folder + str(patientIndexInt) 
+#        patientFolder = folder + str(patientIndexInt) 
+        patientFolder = f"{folder}_{patientIndexInt:02d}"
         if patientFolder not in [f.name for f in os.scandir('./DICOMs/')]:
             os.mkdir('./DICOMs/'+patientFolder)
 
