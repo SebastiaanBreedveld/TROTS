@@ -33,11 +33,11 @@ c = None
 row_offset = 0
 num_aux_variables = 0
 for i in range(len(f['problem']['dataID'])):
-    data_id = int(get_h5py_struct_array_value(f, 'problem', 'dataID', i))
-    is_constraint = bool(get_h5py_struct_array_value(f, 'problem', 'IsConstraint', i))
-    minimize = bool(get_h5py_struct_array_value(f, 'problem', 'Minimise', i))
-    weight = float(get_h5py_struct_array_value(f, 'problem', 'Weight', i))
-    bound = float(get_h5py_struct_array_value(f, 'problem', 'Objective', i))
+    data_id = int(get_h5py_struct_array_value(f, 'problem', 'dataID', i)[0][0])
+    is_constraint = bool(get_h5py_struct_array_value(f, 'problem', 'IsConstraint', i)[0][0])
+    minimize = bool(get_h5py_struct_array_value(f, 'problem', 'Minimise', i)[0][0])
+    weight = float(get_h5py_struct_array_value(f, 'problem', 'Weight', i)[0][0])
+    bound = float(get_h5py_struct_array_value(f, 'problem', 'Objective', i)[0][0])
     
     factor = 1 if minimize else -1
     
