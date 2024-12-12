@@ -244,7 +244,7 @@ for i = 1:dij.numOfScenarios
         end
         if mod(voxels,9) == 0 && voxels/9 == svoxels
             disp('Warning: Multiple scenarios not yet supported')
-            struct_dij = struct_dij(1:9:end,:);
+            struct_dij = struct_dij(1:svoxels,:); % It's the first 1/9 (%) of all rows, not one out of very 9 (1:9:end)
             voxels = size(struct_dij,1);
         end
         if voxels ~= svoxels
