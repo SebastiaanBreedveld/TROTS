@@ -257,7 +257,7 @@ for i = 1:dij.numOfScenarios
 end
 
 %% Optimize
-
+matRad_rc;
 %pln.propOpt.optimizer = 'fmincon';
 [resultGUI, optimizer] = matRad_fluenceOptimization(dij, cst, pln);
 solutionM = resultGUI.wUnsequenced;
