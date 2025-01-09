@@ -93,7 +93,7 @@ for i = 1:nStructures
         cst{i+nStructures,3}          = 'OAR';
     end
     sampVox = cell2mat(patient.SampledVoxels(i));
-    linvoxs = sub2ind(ct.cubeDim, sampVox(2,:), sampVox(1,:), sampVox(3,:));
+    linvoxs = sub2ind(ct.cubeDim, sampVox(2,:), sampVox(1,:), sampVox(3,:)).';
     disp(cst{i+nStructures,2})
     cst{i+nStructures,4}{1}       = linvoxs;
     if strcmp(cst{i+nStructures,3}, 'OAR')
