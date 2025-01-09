@@ -159,9 +159,9 @@ for couchIndex=1:numCouches
 end
 pln.propStf.numOfBeams = numBeams;
 for i=1:numBeams
-    img_isox = patient.Isocentre(1) - ct.x(1);% matrad subtracts offset
-    img_isoy = patient.Isocentre(2) - ct.y(1);% matrad subtracts offset
-    img_isoz = patient.Isocentre(3) - ct.z(1);% matrad subtracts offset
+    img_isox = patient.Isocentre(1);% - ct.x(1);% old matrad version subtracted offset
+    img_isoy = patient.Isocentre(2);% - ct.y(1);% old matrad version subtracted offset
+    img_isoz = patient.Isocentre(3);% - ct.z(1);% old matrad version subtracted offset
     pln.propStf.isoCenter(i,:) = [img_isox img_isoy img_isoz]; % not sure what this is
 end
 pln.voxelDimensions = ct.cubeDim;
@@ -179,6 +179,7 @@ pln.propOpt.runDAO = 0;
 pln.propOpt.runSequencing = 0;
 
 % Here you can open matRadGUI if you want for cross-check geometry
+%matRadGUI;
 
 %% Pass patient TROTS Dij to MATLAB
 
