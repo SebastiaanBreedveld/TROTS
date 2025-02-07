@@ -270,6 +270,7 @@ for i = 1:length(dvh)
     hold on;
 end
 hold off;
+legend(dvh.name);
 matRadGUI;
 qi  = matRad_calcQualityIndicators(cst, pln, resultGUI.physicalDose);
 
