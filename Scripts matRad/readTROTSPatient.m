@@ -272,7 +272,7 @@ end
 hold off;
 legend(dvh.name);
 matRadGUI;
-qi  = matRad_calcQualityIndicators(cst, pln, resultGUI.physicalDose);
+qi  = matRad_calcQualityIndicators(cst(nStructures+1:end,:), pln, resultGUI.physicalDose);
 
 %clearvars -except cst ct dij pln resultGUI patientFolder
 %save([patientFolder 'full.mat'], '-v7.3')
