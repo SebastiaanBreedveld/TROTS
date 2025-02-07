@@ -174,6 +174,7 @@ else
     pln.radiationMode = 'photons';
     pln.propOpt.bioOptimization = 'none';
 end
+pln.propOpt.quantityOpt = 'physicalDose';
 pln.machine = 'Generic';
 pln.propOpt.runDAO = 0;
 pln.propOpt.runSequencing = 0;
