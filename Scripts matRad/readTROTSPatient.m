@@ -110,19 +110,22 @@ end
 
 %% Define constraints and objectives in cst
 
+minmaxmethod = 1; % 1 is approx logsumexp, 2 is voxel-wise
 for i=1:nStructures
     OARIndex = i + nStructures;
     totalIndices = size(problem, 2);
     objectiveIndex = 1;
     for index=1:totalIndices
-        if contains(cst(OARIndex,2),problem(index).Name)
+        oarname = char(cst(OARIndex,2));
+        oarname = oarname(3:end);% remove leading "sp"
+        if strcmp(oarname, problem(index).Name)
             cst{OARIndex,6}{objectiveIndex} = struct();
             if problem(index).IsConstraint == 1
                 cst{OARIndex,6}{objectiveIndex}.className = 'DoseConstraints.matRad_MinMaxDose';
                 if problem(index).Minimise == 1
-                    cst{OARIndex,6}{objectiveIndex}.parameters = cell({0,problem(index).Objective,1}); % 1 is approx, 2 is voxel-wise
+                    cst{OARIndex,6}{objectiveIndex}.parameters = cell({0,problem(index).Objective,minmaxmethod});
                 else
-                    cst{OARIndex,6}{objectiveIndex}.parameters = cell({problem(index).Objective,100,1});
+                    cst{OARIndex,6}{objectiveIndex}.parameters = cell({problem(index).Objective,Inf,minmaxmethod});
                 end
                 cst{OARIndex,6}{objectiveIndex}.epsilon = 1.0000e-03;
             else
@@ -271,7 +274,8 @@ for i = 1:length(dvh)
     hold on;
 end
 hold off;
-legend(dvh.name);
+legtitles = cellfun(@(x) x(3:end), {dvh.name}, 'un', 0); % remove sp
+legend(legtitles);
 matRadGUI;
 qi  = matRad_calcQualityIndicators(cst(nStructures+1:end,:), pln, resultGUI.physicalDose);
 
