@@ -361,5 +361,5 @@ function output_txt = myupdatefcn(~, event)
     % Extract the legend name for the corresponding series
     leg = event.Target.DisplayName;
     % Create a cell array with custom display text
-    output_txt = {['Series:', leg], ['X:', num2str(x)], ['Y:', num2str(y)]};
+    output_txt = {leg, [num2str(x,4),' Gy'], [num2str(y,4),' %V']};
 end
