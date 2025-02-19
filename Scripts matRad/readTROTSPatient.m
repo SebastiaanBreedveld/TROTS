@@ -347,3 +347,19 @@ qi  = matRad_calcQualityIndicators(cst(nStructures+1:end,:), pln, resultGUI.phys
 
 %clearvars -except cst ct dij pln resultGUI patientFolder
 %save([patientFolder 'full.mat'], '-v7.3')
+
+%% Next, create a data cursor object to better interact with the DVH plot and update its properties
+% from https://es.mathworks.com/matlabcentral/answers/1981514-graph-plot-multiple-datasets-how-to-show-dataset-name-when-hovering-over-dataset
+dcm = datacursormode(gcf);
+set(dcm, 'UpdateFcn', @myupdatefcn)
+% Define a custom update function that displays the legend name
+function output_txt = myupdatefcn(~, event)
+    % Extract the data index and the x and y values
+    %idx = event.DataIndex;
+    x = event.Position(1);
+    y = event.Position(2);
+    % Extract the legend name for the corresponding series
+    leg = event.Target.DisplayName;
+    % Create a cell array with custom display text
+    output_txt = {['Series:', leg], ['X:', num2str(x)], ['Y:', num2str(y)]};
+end
