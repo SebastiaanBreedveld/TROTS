@@ -340,6 +340,8 @@ for i = 1:length(dvh)
     hold on;
 end
 hold off;
+xlabel('Dose / Gy')
+ylabel('Volume / %')
 legtitles = cellfun(@(x) x(3:end), {dvh.name}, 'un', 0); % remove sp
 legend(legtitles);
 %matRadGUI; % Open here matRad and showDVH or QI e.g.. Alternatively, use TROTSShowSolution.m with solutionM
