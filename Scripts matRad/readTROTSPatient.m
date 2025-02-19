@@ -236,7 +236,7 @@ for i = 1:dij.numOfScenarios
         if length(find(strcmpi(doseNames(1,:),patient.StructureNames(structIdx)))) > 1
             disp('Warning: Multiple Dij for one struct not yet supported, taking first one')
         end
-        doseIdx = find(strcmpi(doseNames(1,:),patient.StructureNames(structIdx)), 1);%TODO handle double ones!
+        doseIdx = find(strcmpi(doseNames(1,:),patient.StructureNames(structIdx)), 1);%TODO handle double ones! Also, this does not take into account the ones with (mean), MU and Regularization
         struct_dij = data.matrix(doseIdx).A;
         voxels = size(struct_dij,1);
         if data.matrix(doseIdx).b ~= 0
