@@ -342,7 +342,7 @@ end
 hold off;
 legtitles = cellfun(@(x) x(3:end), {dvh.name}, 'un', 0); % remove sp
 legend(legtitles);
-matRadGUI;
+%matRadGUI; % Open here matRad and showDVH or QI e.g.. Alternatively, use TROTSShowSolution.m with solutionM
 qi  = matRad_calcQualityIndicators(cst(nStructures+1:end,:), pln, resultGUI.physicalDose);
 
 %clearvars -except cst ct dij pln resultGUI patientFolder
