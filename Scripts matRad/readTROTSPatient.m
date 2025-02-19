@@ -113,31 +113,97 @@ end
 minmaxmethod = 1; % 1 is approx logsumexp, 2 is voxel-wise
 for i=1:nStructures
     OARIndex = i + nStructures;
+    %cst{OARIndex,6}          = []; % required if you re-run this section after changing code without the previous section rerunning
     totalIndices = size(problem, 2);
     objectiveIndex = 1;
     for index=1:totalIndices
         oarname = char(cst(OARIndex,2));
         oarname = oarname(3:end);% remove leading "sp"
+        dId = problem(index).dataID;
+        dName = data.matrix(dId).Name;
         if strcmp(oarname, problem(index).Name)
-            cst{OARIndex,6}{objectiveIndex} = struct();
-            if problem(index).IsConstraint == 1
-                cst{OARIndex,6}{objectiveIndex}.className = 'DoseConstraints.matRad_MinMaxDose';
-                if problem(index).Minimise == 1
-                    cst{OARIndex,6}{objectiveIndex}.parameters = cell({0,problem(index).Objective,minmaxmethod});
+            if strcmp(oarname, dName) %
+                disp([num2str(objectiveIndex) dName]);
+                cst{OARIndex,6}{objectiveIndex} = struct();
+                if problem(index).IsConstraint == 1
+                    cst{OARIndex,6}{objectiveIndex}.className = 'DoseConstraints.matRad_MinMaxDose';
+                    if problem(index).Minimise == 1
+                        cst{OARIndex,6}{objectiveIndex}.parameters = cell({0,problem(index).Objective,minmaxmethod});
+                    else
+                        cst{OARIndex,6}{objectiveIndex}.parameters = cell({problem(index).Objective,Inf,minmaxmethod});
+                    end
+                    cst{OARIndex,6}{objectiveIndex}.epsilon = 1.0000e-03;
                 else
-                    cst{OARIndex,6}{objectiveIndex}.parameters = cell({problem(index).Objective,Inf,minmaxmethod});
+                    if problem(index).Minimise == 1
+                        cst{OARIndex,6}{objectiveIndex}.className = 'DoseObjectives.matRad_SquaredOverdosing';
+                    else
+                        cst{OARIndex,6}{objectiveIndex}.className = 'DoseObjectives.matRad_SquaredUnderdosing';
+                    end
+                    cst{OARIndex,6}{objectiveIndex}.parameters = cell({problem(index).Objective});
+                    cst{OARIndex,6}{objectiveIndex}.penalty = problem(index).Weight;
                 end
-                cst{OARIndex,6}{objectiveIndex}.epsilon = 1.0000e-03;
-            else
-                if problem(index).Minimise == 1
-                    cst{OARIndex,6}{objectiveIndex}.className = 'DoseObjectives.matRad_SquaredOverdosing';
-                else
-                   cst{OARIndex,6}{objectiveIndex}.className = 'DoseObjectives.matRad_SquaredUnderdosing';
-                end
-                cst{OARIndex,6}{objectiveIndex}.parameters = cell({problem(index).Objective});
-                cst{OARIndex,6}{objectiveIndex}.penalty = problem(index).Weight;
+                objectiveIndex = objectiveIndex + 1;
             end
-            objectiveIndex = objectiveIndex + 1;
+        end
+    end
+    % Apply now "Mean" constraints
+    for index=1:totalIndices
+        oarname = char(cst(OARIndex,2));
+        oarname = oarname(3:end);% remove leading "sp"
+        dId = problem(index).dataID;
+        dName = data.matrix(dId).Name;
+        if strcmp(oarname, problem(index).Name)
+            if strcmp(strcat(oarname, " (mean)"), dName)
+                disp([num2str(objectiveIndex) dName])
+                cst{OARIndex,6}{objectiveIndex} = struct();
+                if problem(index).IsConstraint == 1
+                    disp("Warning mean constraint not yet implemented") % If we do, adapt also the merging strategy below
+                else
+                    if problem(index).Minimise == 1
+                        cst{OARIndex,6}{objectiveIndex}.className = 'DoseObjectives.matRad_MeanDose';
+                    else
+                        disp("Warning mean objective maximization not implemented");
+                    end
+                    cst{OARIndex,6}{objectiveIndex}.parameters = cell({problem(index).Objective});
+                    cst{OARIndex,6}{objectiveIndex}.penalty = problem(index).Weight;
+                end
+                objectiveIndex = objectiveIndex + 1;
+            end
+        end
+    end
+end
+% Cleanup separate min and max constraints, merge them now into a single min-max
+minmaxmethod = 1; % 1 is approx logsumexp, 2 is voxel-wise
+for i=1:nStructures
+    OARIndex = i + nStructures;
+    original = cst{OARIndex,6};
+    colen = size(original,2);
+    cst{OARIndex,6} = [];
+    %idx = cellfun(@(x) isequal(x,3), original);
+    isSecondConstraint = -1;
+    for j = 1:colen
+        isConstraint = strcmp(original{j}.className, 'DoseConstraints.matRad_MinMaxDose');
+        if isConstraint && isSecondConstraint == -1
+            for k = j + 1 : colen
+                if strcmp(original{k}.className, 'DoseConstraints.matRad_MinMaxDose') 
+                    isSecondConstraint = k;
+                    break
+                end
+            end
+            if isSecondConstraint > 0
+                cst{OARIndex,6}{size(cst{OARIndex,6},2)+1} = original{j};
+                if original{j}.parameters{1} == 0 && original{k}.parameters{2} == Inf
+                    cst{OARIndex,6}{size(cst{OARIndex,6},2)}.parameters{1} = original{k}.parameters{1};
+                    cst{OARIndex,6}{size(cst{OARIndex,6},2)}.parameters{2} = original{j}.parameters{2};
+                else
+                    cst{OARIndex,6}{size(cst{OARIndex,6},2)}.parameters{1} = original{j}.parameters{1};
+                    cst{OARIndex,6}{size(cst{OARIndex,6},2)}.parameters{2} = original{k}.parameters{2};
+                end
+            else
+                cst{OARIndex,6}{size(cst{OARIndex,6},2)+1} = original{j};
+            end
+        elseif ~isConstraint
+            cst{OARIndex,6}{size(cst{OARIndex,6},2)+1} = original{j};
         end
     end
 end
@@ -236,7 +302,7 @@ for i = 1:dij.numOfScenarios
         if length(find(strcmpi(doseNames(1,:),patient.StructureNames(structIdx)))) > 1
             disp('Warning: Multiple Dij for one struct not yet supported, taking first one')
         end
-        doseIdx = find(strcmpi(doseNames(1,:),patient.StructureNames(structIdx)), 1);%TODO handle double ones! Also, this does not take into account the ones with (mean), MU and Regularization
+        doseIdx = find(strcmpi(doseNames(1,:),patient.StructureNames(structIdx)), 1);%TODO handle double ones! Also, this does not take into account the ones with MU and Regularization since they are not associated to a structure. One could define a virtual one with one voxel
         struct_dij = data.matrix(doseIdx).A;
         voxels = size(struct_dij,1);
         if data.matrix(doseIdx).b ~= 0
