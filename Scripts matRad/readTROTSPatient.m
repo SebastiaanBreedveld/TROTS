@@ -32,10 +32,7 @@ nSlicesCT =  size(patient.CT, 3);% DICOM slices, goes with z
 nRowsCont =  size(patient.Contours{1, 2},1);
 nColumnsCont =  size(patient.Contours{1, 3},1);
 nSlicesCont =  size(patient.Contours{1, 1},1);
-assert( nRowsCont == nRowsCT && nColumnsCont == nColumnsCT );
-if nSlicesCT ~= nSlicesCont
-    disp('Warning mismatch slices contours vs CT')
-end
+assert( nRowsCont == nRowsCT && nColumnsCont == nColumnsCT && nSlices == nSlicesCont);
 ct.x = linspace(patient.Offset(1), patient.Offset(1)+(nColumnsCT-1)*patient.Resolution(1), nColumnsCT);
 ct.y = linspace(patient.Offset(2), patient.Offset(2)+(nRowsCT-1)*patient.Resolution(2), nRowsCT);
 ct.z = linspace(patient.Offset(3), patient.Offset(3)+(nSlicesCT-1)*patient.Resolution(3), nSlicesCT);
@@ -65,7 +62,7 @@ for i = 1:nStructures
     
     linvoxs = [];
     disp(cst{i,2})
-    for s = 1:nSlicesCont
+    for s = 1:nSlices
         csXY = patient.Contours{1,1}{s,i};
         for sc = 1:length(csXY)
             contoursXY = csXY{sc};
