@@ -335,7 +335,10 @@ end
 matRad_rc;
 %pln.propOpt.optimizer = 'fmincon';
 [resultGUI, optimizer] = matRad_fluenceOptimization(dij, cst, pln);
-solutionM = resultGUI.wUnsequenced;
+qi  = matRad_calcQualityIndicators(cst(nStructures+1:end,:), pln, resultGUI.physicalDose);
+%matRadGUI; % Open here matRad and showDVH or QI e.g.. Alternatively, use TROTSShowSolution.m with solutionM
+
+%solutionM = resultGUI.wUnsequenced;
 dvh = matRad_calcDVH(cst(nStructures+1:end,:), resultGUI.physicalDose);
 
 figure;
@@ -348,11 +351,6 @@ xlabel('Dose / Gy')
 ylabel('Volume / %')
 legtitles = cellfun(@(x) x(3:end), {dvh.name}, 'un', 0); % remove sp
 legend(legtitles);
-%matRadGUI; % Open here matRad and showDVH or QI e.g.. Alternatively, use TROTSShowSolution.m with solutionM
-qi  = matRad_calcQualityIndicators(cst(nStructures+1:end,:), pln, resultGUI.physicalDose);
-
-%clearvars -except cst ct dij pln resultGUI patientFolder
-%save([patientFolder 'full.mat'], '-v7.3')
 
 % Next, create a data cursor object to better interact with the DVH plot and update its properties
 % from https://es.mathworks.com/matlabcentral/answers/1981514-graph-plot-multiple-datasets-how-to-show-dataset-name-when-hovering-over-dataset
@@ -369,3 +367,6 @@ function output_txt = myupdatefcn(~, event)
     % Create a cell array with custom display text
     output_txt = {leg, [num2str(x,4),' Gy'], [num2str(y,4),' %V']};
 end
+
+%clearvars -except cst ct dij pln resultGUI patientFolder
+%save([patientFolder 'full.mat'], '-v7.3')
