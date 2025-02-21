@@ -26,13 +26,17 @@ load(TrotsMatFile);
 ct.resolution.x = patient.Resolution(1);
 ct.resolution.y = patient.Resolution(2);
 ct.resolution.z = patient.Resolution(3);
-nRows =  size(patient.CT, 2); % DICOM Rows, goes with y, is index 2 because of how matrix is stored
-nColumns =  size(patient.CT, 1);% DICOM Columns, goes with x, is index 1 because of how matrix is stored
-nSlices =  size(patient.CT, 3);% DICOM slices, goes with z
-ct.x = linspace(patient.Offset(1), patient.Offset(1)+(nColumns-1)*patient.Resolution(1), nColumns);
-ct.y = linspace(patient.Offset(2), patient.Offset(2)+(nRows-1)*patient.Resolution(2), nRows);
-ct.z = linspace(patient.Offset(3), patient.Offset(3)+(nSlices-1)*patient.Resolution(3), nSlices);
-ct.cubeDim = [nRows nColumns nSlices];
+nRowsCT =  size(patient.CT, 2); % DICOM Rows, goes with y, is index 2 because of how matrix is stored
+nColumnsCT =  size(patient.CT, 1);% DICOM Columns, goes with x, is index 1 because of how matrix is stored
+nSlicesCT =  size(patient.CT, 3);% DICOM slices, goes with z
+nRowsCont =  size(patient.Contours{1, 2},1);
+nColumnsCont =  size(patient.Contours{1, 3},1);
+nSlicesCont =  size(patient.Contours{1, 1},1);
+assert(nSlicesCT == nSlicesCont);
+ct.x = linspace(patient.Offset(1), patient.Offset(1)+(nColumnsCT-1)*patient.Resolution(1), nColumnsCT);
+ct.y = linspace(patient.Offset(2), patient.Offset(2)+(nRowsCT-1)*patient.Resolution(2), nRowsCT);
+ct.z = linspace(patient.Offset(3), patient.Offset(3)+(nSlicesCT-1)*patient.Resolution(3), nSlicesCT);
+ct.cubeDim = [nRowsCT nColumnsCT nSlicesCT];
 ct.numOfCtScen = 1;
 ct.timeStamp = string(datetime("now"));
 ct.cubeHU = {double(permute(patient.CT,[2 1 3]))};
@@ -58,12 +62,12 @@ for i = 1:nStructures
     
     linvoxs = [];
     disp(cst{i,2})
-    for s = 1:nSlices
+    for s = 1:nSlicesCont
         csXY = patient.Contours{1,1}{s,i};
         for sc = 1:length(csXY)
             contoursXY = csXY{sc};
             in = inpolygon(grx,gry,contoursXY(:,1),contoursXY(:,2)).';
-            ind = find(in) + (s-1)*nRows*nColumns;
+            ind = find(in) + (s-1)*nRowsCT*nColumnsCT;
             linvoxs = cat(1, linvoxs, ind);
         end
         if ~isempty(csXY)
