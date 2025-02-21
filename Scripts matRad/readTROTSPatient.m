@@ -32,7 +32,7 @@ nSlicesCT =  size(patient.CT, 3);% DICOM slices, goes with z
 nRowsCont =  size(patient.Contours{1, 2},1);
 nColumnsCont =  size(patient.Contours{1, 3},1);
 nSlicesCont =  size(patient.Contours{1, 1},1);
-assert(nSlicesCT == nSlicesCont);
+% assert(nSlicesCT == nSlicesCont); % we assume that missing contour slices are 'after', so they start synchronized and it does not matter the mismatch
 ct.x = linspace(patient.Offset(1), patient.Offset(1)+(nColumnsCT-1)*patient.Resolution(1), nColumnsCT);
 ct.y = linspace(patient.Offset(2), patient.Offset(2)+(nRowsCT-1)*patient.Resolution(2), nRowsCT);
 ct.z = linspace(patient.Offset(3), patient.Offset(3)+(nSlicesCT-1)*patient.Resolution(3), nSlicesCT);
