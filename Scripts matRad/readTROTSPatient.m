@@ -354,7 +354,7 @@ qi  = matRad_calcQualityIndicators(cst(nStructures+1:end,:), pln, resultGUI.phys
 %clearvars -except cst ct dij pln resultGUI patientFolder
 %save([patientFolder 'full.mat'], '-v7.3')
 
-%% Next, create a data cursor object to better interact with the DVH plot and update its properties
+% Next, create a data cursor object to better interact with the DVH plot and update its properties
 % from https://es.mathworks.com/matlabcentral/answers/1981514-graph-plot-multiple-datasets-how-to-show-dataset-name-when-hovering-over-dataset
 dcm = datacursormode(gcf);
 set(dcm, 'UpdateFcn', @myupdatefcn)
