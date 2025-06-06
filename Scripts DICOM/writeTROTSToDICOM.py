@@ -4,7 +4,6 @@ import numpy as np
 import pydicom
 from pydicom.dataset import Dataset 
 from pydicom.uid import ExplicitVRLittleEndian
-import pydicom._storage_sopclass_uids
 from rt_utils import RTStructBuilder
 from PIL import Image, ImageDraw
 import csv
@@ -49,7 +48,7 @@ for folder in caseFolders:
                 FORUID = pydicom.uid.generate_uid()
             meta = pydicom.Dataset()
             SOPInstanceUID = pydicom.uid.generate_uid()
-            meta.MediaStorageSOPClassUID = pydicom._storage_sopclass_uids.CTImageStorage
+            meta.MediaStorageSOPClassUID = pydicom.uid.CTImageStorage
             meta.MediaStorageSOPInstanceUID = SOPInstanceUID
             meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian  
             ds = Dataset()
@@ -70,7 +69,7 @@ for folder in caseFolders:
             ds.ReferringPhysiciansName = ""
             ds.ImageType = ['ORIGINAL', 'PRIMARY', 'AXIAL']
 
-            ds.ReferencedSOPClassUID = pydicom._storage_sopclass_uids.CTImageStorage
+            ds.ReferencedSOPClassUID = pydicom.uid.CTImageStorage
             ds.ReferencedSOPInstanceUID = ReferencedSOPInstanceUID
 
             ds.StudyInstanceUID = StudyInstanceUID
@@ -81,7 +80,7 @@ for folder in caseFolders:
             ds.FrameOfReferenceUID = FORUID 
             ds.FrameOfReferenceIndicator = ""
 
-            ds.SOPClassUID = pydicom._storage_sopclass_uids.CTImageStorage
+            ds.SOPClassUID = pydicom.uid.CTImageStorage
             ds.SOPInstanceUID = SOPInstanceUID
 
             ds.Modality = "CT"
@@ -109,7 +108,7 @@ for folder in caseFolders:
 
             ds.PixelData = np.array(mat['patient']['CT'][:,:,sliceIndex]+1024).tobytes() 
 
-            pydicom.filewriter.write_file("./DICOMs/"+patientFolder+'/CTSlice'+'0'*(3-len(str(sliceIndex)))+str(sliceIndex)+".dcm", ds, write_like_original = False)
+            ds.save_as("./DICOMs/"+patientFolder+'/CTSlice'+'0'*(3-len(str(sliceIndex)))+str(sliceIndex)+".dcm", write_like_original = False)
 
         # write RTStruct
         rtstruct = RTStructBuilder.create_new(dicom_series_path="./DICOMs/"+patientFolder+'/')
