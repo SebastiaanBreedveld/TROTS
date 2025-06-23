@@ -3,19 +3,19 @@ import mat73
 import numpy as np
 import pydicom
 from pydicom.dataset import Dataset
-# from pydicom.uid import ExplicitVRLittleEndian
-from rt_utils import RTStructBuilder
-from PIL import Image, ImageDraw
+from pydicom.sequence import Sequence
 import csv
-# import matplotlib.pyplot as plt
+import seaborn as sns
 
 caseFolders = ['Prostate_CK', 'Head-and-Neck', 'Protons', 'Liver', 'Prostate_BT', 'Prostate_VMAT', 'Head-and-Neck-Alt']
-patientIndexTot = 1
 for folder in caseFolders:
-    matfiles = [f.name for f in os.scandir('./'+folder)]
-    for matFile in matfiles:
+    try:
+        matFiles = [f.name for f in os.scandir('./'+folder)]
+    except:
+        continue
+    for matFile in matFiles:
         print('Folder and file:', folder, matFile)
-        patientIndexInt = matfiles.index(matFile) + 1
+        patientIndexInt = matFiles.index(matFile) + 1
         patientFolder = f"{folder}_{patientIndexInt:02d}"
         if patientFolder not in [f.name for f in os.scandir('./DICOMs/')]:
             os.mkdir('./DICOMs/'+patientFolder)
@@ -28,7 +28,7 @@ for folder in caseFolders:
         nRowsCT =  ctshape[1] # DICOM Rows, goes with y, is index 1 because of how matrix is stored
         nColumnsCT = ctshape[0] # DICOM Columns, goes with x, is index 0 because of how matrix is stored
         nSlicesCT = ctshape[2] # DICOM slices, goes with z
-
+        ctsopids = {}
         # write planning objectives into csv
         with open("./DICOMs/"+patientFolder+'/planning.csv', 'w', newline = '') as csvfile:
             filewriter = csv.writer(csvfile)
@@ -56,8 +56,8 @@ for folder in caseFolders:
             ds = Dataset()
             ds.file_meta = meta
 
-            ds.PatientName = str(patientIndexInt) + '^' + folder
-            ds.PatientID = "0" * (6-len(str(patientIndexTot))) + str(patientIndexTot)
+            ds.PatientName = 'TROTS' + '^' + matFile[:-4]
+            ds.PatientID = 'TROTS_' + matFile[:-4]
             ds.PatientBirthDate = ""
             ds.PatientSex = ""
             ds.PatientAge = ""
@@ -66,6 +66,7 @@ for folder in caseFolders:
 
             ds.StudyDate = "20230308"
             ds.StudyTime = "104455"
+            ds.StudyDescription = "RT optimizers"
             ds.AccessionNumber = ""
             ds.Manufacturer = ""
             ds.InstitutionName = ""
@@ -76,15 +77,17 @@ for folder in caseFolders:
             ds.ReferencedSOPInstanceUID = ReferencedSOPInstanceUID
 
             ds.StudyInstanceUID = StudyInstanceUID
-            ds.StudyID = str(patientIndexTot).zfill(4)
+            ds.StudyID = 'TROTS'
             ds.SeriesInstanceUID = SeriesInstanceUID
             ds.SeriesNumber = 1
+            ds.SeriesDescription = "TROTS anonymized " + folder
 
             ds.FrameOfReferenceUID = FORUID
-            ds.FrameOfReferenceIndicator = ""
+            ds.PositionReferenceIndicator = ""
 
             ds.SOPClassUID = pydicom.uid.CTImageStorage
             ds.SOPInstanceUID = SOPInstanceUID
+            ctsopids[sliceIndex] = SOPInstanceUID
 
             ds.Modality = "CT"
 
@@ -114,46 +117,104 @@ for folder in caseFolders:
             ds.save_as("./DICOMs/"+patientFolder+'/CTSlice'+str(sliceIndex).zfill(3)+".dcm", write_like_original = False)
 
         # write RTStruct
-        rtstruct = RTStructBuilder.create_new(dicom_series_path="./DICOMs/"+patientFolder+'/')
+        meta = pydicom.Dataset()
+        SOPInstanceUID = pydicom.uid.generate_uid()
+        meta.MediaStorageSOPClassUID = pydicom.uid.RTStructureSetStorage
+        meta.MediaStorageSOPInstanceUID = SOPInstanceUID
+        meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
+        rds = Dataset()
+        rds.file_meta = meta
 
-        for structIndex in range(0, len(mat['patient']['StructureNames'])):
-            print('Working on structure',structIndex,'(',mat['patient']['StructureNames'][structIndex],')...')
-            structBinMap = np.swapaxes(np.zeros(mat['patient']['CT'].shape), 0, 1)
+        rds.Modality = "RTSTRUCT"
+        rds.PatientName = ds.PatientName
+        rds.PatientID = ds.PatientID
+        rds.PatientBirthDate = ds.PatientBirthDate
+        rds.PatientSex = ds.PatientSex
+        rds.PatientAge = ds.PatientAge
+        rds.StudyDate = ds.StudyDate
+        rds.StudyTime = ds.StudyTime
+        rds.AccessionNumber = ds.AccessionNumber
+        rds.Manufacturer = ds.Manufacturer
+        rds.ReferringPhysicianName = ""
+        
+        rds.StudyInstanceUID = ds.StudyInstanceUID
+        rds.StudyID = ds.StudyID
+        rds.SeriesInstanceUID = pydicom.uid.generate_uid()
+        rds.SeriesNumber = 1        
+        rds.SOPClassUID = pydicom.uid.RTStructureSetStorage
+        rds.SOPInstanceUID = SOPInstanceUID
+        rds.FrameOfReferenceUID = ds.FrameOfReferenceUID
+        rds.PositionReferenceIndicator = ds.PositionReferenceIndicator
+
+        rds.StructureSetLabel = "Contours"
+        rds.StructureSetDate = ds.StudyDate
+        rds.StructureSetTime = ds.StudyTime
+        
+        rds.ApprovalStatus = "UNAPPROVED"
+
+        rds.ReferencedFrameOfReferenceSequence = Sequence()
+        rfor = Dataset()
+        rfor.ReferencedFrameOfReferenceUID = ds.FrameOfReferenceUID
+        # rfor.RTReferencedStudySequence = Sequence() # Optional
+        # rrs = Dataset()
+        # rrs.ReferencedSOPClassUID = 
+        # rfor.RTReferencedStudySequence.append(rrs)
+        rds.ReferencedFrameOfReferenceSequence.append(rfor)
+
+        rds.StructureSetROISequence = Sequence()
+        rds.ROIContourSequence = Sequence()
+        rds.RTROIObservationsSequence = Sequence()
+        nROIs = len(mat['patient']['StructureNames'])
+        COLOR_PALETTE = sns.color_palette("hls", nROIs)
+        for structIndex, structName in enumerate(mat['patient']['StructureNames']):
+            print('Working on structure',structIndex+1,'(',structName,')...')
+            
+            roi = Dataset()
+            roi.ROINumber = structIndex + 1
+            roi.ReferencedFrameOfReferenceUID = rds.FrameOfReferenceUID
+            roi.ROIName = structName
+            roi.ROIGenerationAlgorithm = ''
+            rds.StructureSetROISequence.append(roi)
+            
+            robs = Dataset()
+            robs.ObservationNumber = structIndex + 1
+            robs.ReferencedROINumber = structIndex + 1
+            if 'ring' in structName.lower() or 'shell' in structName.lower() or 'intermediate' in structName.lower():
+                robs.RTROIInterpretedType = 'CONTROL'
+            elif 'ptv' in structName.lower():
+                robs.RTROIInterpretedType = 'PTV'
+            elif 'ctv' in structName.lower():
+                robs.RTROIInterpretedType = 'CTV'
+            elif 'gtv' in structName.lower():
+                robs.RTROIInterpretedType = 'GTV'
+            elif structName.lower() == 'patient' or structName.lower() == 'external':
+                robs.RTROIInterpretedType = 'EXTERNAL'
+            else:
+                robs.RTROIInterpretedType = 'OAR'
+            rds.RTROIObservationsSequence.append(robs)
+            
+            rc = Dataset()
+            rc.ROIDisplayColor = [int(c*255) for c in COLOR_PALETTE[structIndex]]
+            rc.ReferencedROINumber = structIndex + 1
+            rc.ContourSequence = Sequence()
             for sliceIndex in range(0, len(mat['patient']['Contours'][0])):
                 if mat['patient']['Contours'][0][sliceIndex][structIndex] != None:
                     for subStructIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex])):
-                        X = [(mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex][valueIndex][0]-mat['patient']['Offset'][0])/mat['patient']['Resolution'][0] for valueIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex]))]
-                        Y = [(mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex][valueIndex][1]-mat['patient']['Offset'][1])/mat['patient']['Resolution'][1] for valueIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex]))]
-                        polygon = [(X[valueIndex], Y[valueIndex]) for valueIndex in range(0, len(X))]
-                        width = nColumnsCT
-                        height = nRowsCT
-                        img = Image.new('L', (width, height), 0)
-                        ImageDraw.Draw(img).polygon(polygon, outline=1, fill=1)
-                        mask = np.array(img)
-                        structBinMap[:,:,sliceIndex] += mask
-            structBinMap[np.where(structBinMap > 0)] = 1
-            structBinMap = np.array(structBinMap, dtype = bool)
-            rtstruct.add_roi(
-              mask = structBinMap,
-              name = mat['patient']['StructureNames'][structIndex])
+                        cdata = mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex]
+                        nPoints = cdata.shape[0]
+                        Z = [mat['patient']['Offset'][2] + resolutionZ*sliceIndex] * nPoints
+                        cdata = np.c_[cdata, Z]
+                        cont = Dataset()
+                        cont.ContourGeometricType = 'CLOSED_PLANAR'
+                        cont.NumberOfContourPoints = nPoints
+                        cont.ContourData = cdata.flatten().tolist()
+                        cont.ContourImageSequence = Sequence()
+                        ci = Dataset()
+                        ci.ReferencedSOPClassUID = pydicom.uid.CTImageStorage
+                        ci.ReferencedSOPInstanceUID = ctsopids[sliceIndex]
+                        cont.ContourImageSequence.append(ci)
+                        rc.ContourSequence.append(cont)
+            rds.ROIContourSequence.append(rc)
+            
 
-        rtstruct.save("./DICOMs/"+patientFolder+'/structs.dcm')
-
-        RTStruct = "./DICOMs/"+patientFolder+'/structs.dcm'
-        RTStructContent = pydicom.dcmread(RTStruct)
-
-        for structIndex in range(0, len(RTStructContent.StructureSetROISequence)):
-            if 'ring' in RTStructContent.StructureSetROISequence[structIndex].ROIName.lower() or 'shell' in RTStructContent.StructureSetROISequence[structIndex].ROIName.lower():
-                RTStructContent.RTROIObservationsSequence[structIndex].RTROIInterpretedType = 'CONTROL'
-            elif 'ptv' in RTStructContent.StructureSetROISequence[structIndex].ROIName.lower():
-                RTStructContent.RTROIObservationsSequence[structIndex].RTROIInterpretedType = 'PTV'
-            elif 'ctv' in RTStructContent.StructureSetROISequence[structIndex].ROIName.lower():
-                RTStructContent.RTROIObservationsSequence[structIndex].RTROIInterpretedType = 'CTV'
-            elif RTStructContent.StructureSetROISequence[structIndex].ROIName.lower() == 'patient' or RTStructContent.StructureSetROISequence[structIndex].ROIName.lower() == 'external':
-                RTStructContent.RTROIObservationsSequence[structIndex].RTROIInterpretedType = 'EXTERNAL'
-            else:
-                RTStructContent.RTROIObservationsSequence[structIndex].RTROIInterpretedType = 'OAR'
-
-        RTStructContent.save_as("./DICOMs/"+patientFolder+'/structs.dcm')
-
-        patientIndexTot += 1
+        rds.save_as("./DICOMs/"+patientFolder+'/rtstruct.dcm', write_like_original = False)
