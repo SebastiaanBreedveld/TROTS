@@ -469,16 +469,4 @@ for folder in caseFolders:
                 be.ToleranceTableNumber = 0 
                 ds.IonBeamSequence.append(be)
             
-            ds.SOPClassUID = pydicom.uid.RTPlanStorage
-            ds.ReferencedStructureSetSequence = Sequence()
-            structds = Dataset()
-            structds.SOPClassUID = RTStructContent.SOPClassUID
-            structds.SOPInstanceUID = RTStructContent.SOPInstanceUID
-            ds.ReferencedStructureSetSequence.append(structds)
-            ds.ApprovalStatus = "APPROVED"
-            ds.ReviewDate = "20230308"
-            ds.ReviewTime = "104455"
-            ds.ReviewerName = ""
-            ds.save_as("./DICOMs/"+patientFolder+'/rtplan.dcm', enforce_file_format = True)
-        
         patientIndexTot += 1
