@@ -100,7 +100,7 @@ for folder in caseFolders:
             ds.ImagePositionPatient = [format_number_as_ds(mat['patient']['Offset'][0]), format_number_as_ds(mat['patient']['Offset'][1]), format_number_as_ds(mat['patient']['Offset'][2] + resolutionZ*sliceIndex)]
             ds.ImageOrientationPatient = [1.000000, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000]
 
-            ds.SamplesPerPixel = 1
+            ds.SamplesPerPixel = 1ds.StudyTime
             ds.PhotometricInterpretation = "MONOCHROME2"
             ds.Rows = nRowsCT
             ds.Columns = nColumnsCT
@@ -281,47 +281,43 @@ for folder in caseFolders:
             meta.MediaStorageSOPInstanceUID = SOPInstanceUID
             meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian  
             
-            ds = Dataset()
-            ds.file_meta = meta
-            ds.SOPClassUID = pydicom.uid.RTPlanStorage
-            ds.SOPInstanceUID = SOPInstanceUID
-            ds.StudyDate = "20230308"
-            ds.SeriesDate = "20230308"
-            ds.StudyTime = "104455"
-            ds.SeriesTime = "104455"
-            ds.AccessionNumber = ""
-            ds.Modality = "RTPLAN"
-            ds.Manufacturer = ""
-            ds.InstitutionName = ""
-            ds.ReferringPhysicianName = ""
-            ds.OperatorsName = ""
-            ds.ManufacturerModelName    = ""
-            ds.PatientName = str(patientIndexInt) + '^' + folder
-            ds.PatientID = "0" * (6-len(str(patientIndexTot))) + str(patientIndexTot)
-            ds.PatientBirthDate = ""
-            ds.PatientSex = ""
-            ds.PatientIdentityRemoved = "YES"
-            ds.PatientAge = ""
-            ds.SoftwareVersions         = "pydicom3.0.1"
-            ds.StudyInstanceUID = StudyInstanceUID
-            ds.SeriesInstanceUID = SeriesInstanceUID
-            ds.StudyID = "0" * (6-len(str(patientIndexTot))) + str(patientIndexTot)
-            ds.SeriesNumber = 1
-            ds.InstanceNumber = 1 
-            ds.FrameOfReferenceUID = FORUID 
-            ds.PositionReferenceIndicator = ''
-            ds.RTPlanDate = ""
-            ds.RTPlanTime = ""
-            ds.RTPlanGeometry = "PATIENT"
+            rtds = Dataset()
+            rtds.file_meta = meta
+            rtds.SOPClassUID = pydicom.uid.RTPlanStorage
+            rtds.SOPInstanceUID = SOPInstanceUID
+            rtds.StudyDate = ds.StudyDate
+            rtds.SeriesDate = ds.StudyDate
+            rtds.StudyTime = ds.StudyTime
+            rtds.AccessionNumber = ds.AccessionNumber
+            rtds.Modality = "RTPLAN"
+            rtds.Manufacturer = ds.Manufacturer
+            rtds.InstitutionName = ""
+            rtds.ReferringPhysicianName = ""
+            rtds.OperatorsName = ""
+            rtds.ManufacturerModelName    = ds.ManufacturerModelName
+            rtds.PatientName = ds.PatientName
+            rtds.PatientID = ds.PatientID
+            rtds.PatientBirthDate = ds.PatientBirthDate
+            rtds.PatientSex = ds.PatientSex
+            rtds.StudyInstanceUID = ds.StudyInstanceUID
+            rtds.SeriesInstanceUID = ds.StudyInstanceUID
+            rtds.StudyID = ds.StudyID
+            rtds.SeriesNumber = 1
+            rtds.InstanceNumber = 1 
+            rds.FrameOfReferenceUID = ds.FrameOfReferenceUID
+            rtds.PositionReferenceIndicator = ''
+            rtds.RTPlanDate = ""
+            rtds.RTPlanTime = ""
+            rtds.RTPlanGeometry = "PATIENT"
             
-            ds.PatientSetupSequence = Sequence()
+            rtds.PatientSetupSequence = Sequence()
             patientSetup = Dataset()
             patientSetup.PatientPosition = mat["patient"]["PatientPosition"]
             patientSetup.PatientSetupNumber = 1
             patientSetup.PatientSetupLabel = "Standard"
-            ds.PatientSetupSequence.append(patientSetup)
+            rtds.PatientSetupSequence.append(patientSetup)
             
-            ds.IonBeamSequence = Sequence()
+            rtds.IonBeamSequence = Sequence()
             currentbeamlist = []
             beaminfo = {}
             beaminfo["BeamNumber"] = 1
@@ -364,7 +360,7 @@ for folder in caseFolders:
                     controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][int(patientFolder[-2:])-1][rowindex][2:4].tolist()
             currentbeamlist.append(beaminfo) 
             
-            ds.FractionGroupSequence = Sequence()
+            rtds.FractionGroupSequence = Sequence()
             fractionds = Dataset()
             fractionds.FractionGroupNumber = 1
             fractionds.NumberOfFractionsPlanned = 1
@@ -376,7 +372,7 @@ for folder in caseFolders:
                 be.BeamMeterset = beaminfo["FinalCumulativeMetersetWeight"]
                 be.BeamNumber = beaminfo["BeamNumber"]
                 fractionds.BeamSequence.append(be)
-            ds.FractionGroupSequence.append(fractionds)
+            rtds.FractionGroupSequence.append(fractionds)
             
             for beaminfo in currentbeamlist:
                 be = Dataset()
@@ -467,5 +463,5 @@ for folder in caseFolders:
                     be.IonControlPointSequence.append(icpoi)
                 be.PatientSetupNumber = 1
                 be.ToleranceTableNumber = 0 
-                ds.IonBeamSequence.append(be)
+                rtds.IonBeamSequence.append(be)
             
