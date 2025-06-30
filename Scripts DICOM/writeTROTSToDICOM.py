@@ -1,6 +1,7 @@
 import os
 import mat73
 import numpy as np
+import copy
 import pydicom
 from pydicom.dataset import Dataset
 from pydicom.sequence import Sequence
@@ -259,3 +260,225 @@ for folder in caseFolders:
             rds.ROIContourSequence.append(rc)
 
         rds.save_as("./DICOMs/"+patientFolder+'/rtstruct.dcm', write_like_original = False)
+        
+        if(folder == 'Protons'):
+            beamlistfolder = mat73.loadmat('./'+folder+'/BeamList.mat')
+            
+            machinedata = mat73.loadmat('./'+folder+'/MachineData.mat')
+            beamSigmas = {}
+            for i in range(machinedata["BeamInfo"]["Sigma"].shape[0]):
+                if(machinedata["BeamInfo"]["EnergyRangeList"][i][0]<machinedata["BeamInfo"]["EnergyRangeList"][i][1]):
+                    beamSigmas[tuple([machinedata["BeamInfo"]["EnergyRangeList"][i][0],machinedata["BeamInfo"]["EnergyRangeList"][i][1]])] = machinedata["BeamInfo"]["Sigma"][i]
+                else:
+                    beamSigmas[tuple([machinedata["BeamInfo"]["EnergyRangeList"][i][1],machinedata["BeamInfo"]["EnergyRangeList"][i][0]])] = machinedata["BeamInfo"]["Sigma"][i]
+            SAD = [machinedata["BeamInfo"]["SAD"][0],machinedata["BeamInfo"]["SAD"][1]]
+            
+            # write rtplan
+            print('Working on rtplan...')
+            meta = pydicom.Dataset()
+            SOPInstanceUID = pydicom.uid.generate_uid()
+            meta.MediaStorageSOPClassUID = pydicom.uid.RTPlanStorage
+            meta.MediaStorageSOPInstanceUID = SOPInstanceUID
+            meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian  
+            
+            ds = Dataset()
+            ds.file_meta = meta
+            ds.SOPClassUID = pydicom.uid.RTPlanStorage
+            ds.SOPInstanceUID = SOPInstanceUID
+            ds.StudyDate = "20230308"
+            ds.SeriesDate = "20230308"
+            ds.StudyTime = "104455"
+            ds.SeriesTime = "104455"
+            ds.AccessionNumber = ""
+            ds.Modality = "RTPLAN"
+            ds.Manufacturer = ""
+            ds.InstitutionName = ""
+            ds.ReferringPhysicianName = ""
+            ds.OperatorsName = ""
+            ds.ManufacturerModelName    = ""
+            ds.PatientName = str(patientIndexInt) + '^' + folder
+            ds.PatientID = "0" * (6-len(str(patientIndexTot))) + str(patientIndexTot)
+            ds.PatientBirthDate = ""
+            ds.PatientSex = ""
+            ds.PatientIdentityRemoved = "YES"
+            ds.PatientAge = ""
+            ds.SoftwareVersions         = "pydicom3.0.1"
+            ds.StudyInstanceUID = StudyInstanceUID
+            ds.SeriesInstanceUID = SeriesInstanceUID
+            ds.StudyID = "0" * (6-len(str(patientIndexTot))) + str(patientIndexTot)
+            ds.SeriesNumber = 1
+            ds.InstanceNumber = 1 
+            ds.FrameOfReferenceUID = FORUID 
+            ds.PositionReferenceIndicator = ''
+            ds.RTPlanDate = ""
+            ds.RTPlanTime = ""
+            ds.RTPlanGeometry = "PATIENT"
+            
+            ds.PatientSetupSequence = Sequence()
+            patientSetup = Dataset()
+            patientSetup.PatientPosition = mat["patient"]["PatientPosition"]
+            patientSetup.PatientSetupNumber = 1
+            patientSetup.PatientSetupLabel = "Standard"
+            ds.PatientSetupSequence.append(patientSetup)
+            
+            ds.IonBeamSequence = Sequence()
+            currentbeamlist = []
+            beaminfo = {}
+            beaminfo["BeamNumber"] = 1
+            beaminfo["FileBeamNumber"] = int(beamlistfolder["BeamList"][int(patientFolder[-2:])-1][0][0])
+            beaminfo["RangeShifter"] = beamlistfolder["BeamList"][int(patientFolder[-2:])-1][0][4]
+            beaminfo["FinalCumulativeMetersetWeight"] = 0
+            beaminfo["ControlPoints"] = []
+            controlpointinfo = {}
+            controlpointinfo["ControlPointNumber"] = 0
+            controlpointinfo["BeamEnergy"] = beamlistfolder["BeamList"][int(patientFolder[-2:])-1][0][1]
+            controlpointinfo["MetersetWeights"] = []
+            controlpointinfo["ScanSpotPositions"] = []
+            controlpointinfo["CumulativeMetersetWeight"] = 0
+            for rowindex in range(len(beamlistfolder["BeamList"][int(patientFolder[-2:])-1])):
+                row = beamlistfolder["BeamList"][int(patientFolder[-2:])-1][rowindex]
+                if(beaminfo["FileBeamNumber"] ==row[0] and beaminfo["RangeShifter"] == row[4]):
+                    if(controlpointinfo["BeamEnergy"]==row[1]):
+                        controlpointinfo["ScanSpotPositions"].extend(beamlistfolder["BeamList"][int(patientFolder[-2:])-1][rowindex][2:4])
+                        controlpointinfo["MetersetWeights"].append(mat["solutionX"][rowindex])
+                    else:
+                        beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
+                        controlpointinfo["CumulativeMetersetWeight"] += sum(controlpointinfo["MetersetWeights"])
+                        controlpointinfo["ControlPointNumber"] += 1
+                        controlpointinfo["BeamEnergy"] = row[1]
+                        controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
+                        controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][int(patientFolder[-2:])-1][rowindex][2:4].tolist()
+                else:
+                    beaminfo["FinalCumulativeMetersetWeight"] = controlpointinfo["CumulativeMetersetWeight"] + sum(controlpointinfo["MetersetWeights"])
+                    beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
+                    currentbeamlist.append(copy.deepcopy(beaminfo))
+                    beaminfo["BeamNumber"] = beaminfo["BeamNumber"] + 1
+                    beaminfo["FileBeamNumber"] = int(row[0])
+                    beaminfo["RangeShifter"] = row[4]
+                    beaminfo["FinalCumulativeMetersetWeight"] = 0
+                    beaminfo["ControlPoints"] = []
+                    controlpointinfo["CumulativeMetersetWeight"] = 0
+                    controlpointinfo["ControlPointNumber"] += 1
+                    controlpointinfo["BeamEnergy"] = row[1]
+                    controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
+                    controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][int(patientFolder[-2:])-1][rowindex][2:4].tolist()
+            currentbeamlist.append(beaminfo) 
+            
+            ds.FractionGroupSequence = Sequence()
+            fractionds = Dataset()
+            fractionds.FractionGroupNumber = 1
+            fractionds.NumberOfFractionsPlanned = 1
+            fractionds.NumberOfBeams = len(currentbeamlist)
+            fractionds.NumberOfBrachyApplicationSetups = 0
+            fractionds.BeamSequence = Sequence()
+            for beaminfo in currentbeamlist:
+                be = Dataset()
+                be.BeamMeterset = beaminfo["FinalCumulativeMetersetWeight"]
+                be.BeamNumber = beaminfo["BeamNumber"]
+                fractionds.BeamSequence.append(be)
+            ds.FractionGroupSequence.append(fractionds)
+            
+            for beaminfo in currentbeamlist:
+                be = Dataset()
+                be.Manufacturer = ""
+                be.InstitutionName  = ""
+                be.ManufacturerModelName  = ""
+                be.TreatmentMachineName   = ""
+                be.InstitutionAddress = ""
+                be.PrimaryDosimeterUnit = "MU"
+                be.BeamNumber             = beaminfo["BeamNumber"]
+                be.BeamName               = ""
+                be.BeamType               = 'STATIC'
+                be.RadiationType          = "PROTON"
+                be.TreatmentDeliveryType  = 'TREATMENT'
+                be.NumberOfWedges         = 0
+                be.NumberOfCompensators   = 0
+                be.NumberOfBoli           = 0
+                be.NumberOfBlocks         = 0
+                be.FinalCumulativeMetersetWeight = beaminfo["FinalCumulativeMetersetWeight"]
+                be.ScanMode                   = 'MODULATED'
+                be.SourceAxisDistance = SAD
+                if(beaminfo["RangeShifter"] ==0):
+                    be.NumberOfRangeShifters = 0
+                else:
+                    be.NumberOfRangeShifters = 1
+                    be.RangeShifterSequence = Sequence()
+                    rsDataset = Dataset()
+                    rsDataset.AccessoryCode = "Undefined Accessory Code"
+                    rsDataset.RangeShifterNumber = 1
+                    rsDataset.RangeShifterID = "Rs " + str(beaminfo["RangeShifter"]) + " mm"
+                    rsDataset.RangeShifterType = "BINARY"
+                    be.RangeShifterSequence.append(rsDataset)
+                be.NumberOfControlPoints  = 2*len(beaminfo["ControlPoints"])
+                be.IonControlPointSequence = Sequence()
+                be.NumberOfLateralSpreadingDevices = 0
+                be.NumberOfRangeModulators = 0
+                be.PatientSupportType = 'TABLE'
+                
+                for controlpointinfo in beaminfo["ControlPoints"]:
+                    icpoi = Dataset()
+                    icpoi.NominalBeamEnergyUnit = 'MEV'
+                    icpoi.ControlPointIndex = 2*controlpointinfo["ControlPointNumber"]
+                    icpoi.NominalBeamEnergy = controlpointinfo["BeamEnergy"]
+                    icpoi.CumulativeMetersetWeight = controlpointinfo["CumulativeMetersetWeight"]
+                    icpoi.GantryAngle = mat['patient']['Beams']['BeamConfig'][beaminfo["FileBeamNumber"]-1]['Gantry']
+                    icpoi.GantryRotationDirection = 'NONE'
+                    icpoi.BeamLimitingDeviceAngle = mat['patient']['Beams']['BeamConfig'][beaminfo["FileBeamNumber"]-1]['Collimator']
+                    icpoi.BeamLimitingDeviceRotationDirection = 'NONE'
+                    icpoi.PatientSupportAngle = mat['patient']['Beams']['BeamConfig'][beaminfo["FileBeamNumber"]-1]['Couch'] # I think...
+                    icpoi.PatientSupportRotationDirection = 'NONE'
+                    
+                    icpoi.TableTopVerticalPosition     = 0
+                    icpoi.TableTopLongitudinalPosition = 0
+                    icpoi.TableTopLateralPosition      = 0
+                    icpoi.IsocenterPosition = mat["patient"]["Isocentre"].flatten().tolist()
+                    icpoi.TableTopPitchAngle = 0
+                    icpoi.TableTopPitchRotationDirection = 'NONE'
+                    icpoi.TableTopRollAngle = 0
+                    icpoi.TableTopRollRotationDirection = 'NONE'
+                    icpoi.GantryPitchAngle = 0
+                    icpoi.GantryPitchRotationDirection = 'NONE'
+                    icpoi.SnoutPosition = None
+                    icpoi.ScanSpotTuneID = 'TROTS_1.0'
+                    icpoi.NumberOfScanSpotPositions = len(controlpointinfo["MetersetWeights"])
+                    icpoi.ScanSpotPositionMap = controlpointinfo["ScanSpotPositions"]
+                    icpoi.ScanSpotMetersetWeights = controlpointinfo["MetersetWeights"]
+                    for (low,high),sigma in beamSigmas.items():
+                        if((controlpointinfo["BeamEnergy"]>=low) and (controlpointinfo["BeamEnergy"]<=high)):
+                            icpoi.ScanningSpotSize = [sigma[0],sigma[1]]
+                            break
+                    icpoi.NumberOfPaintings = 1
+                    be.IonControlPointSequence.append(icpoi)
+                    
+                    icpoi = Dataset()
+                    icpoi.NominalBeamEnergyUnit = 'MEV'
+                    icpoi.ControlPointIndex = 2*controlpointinfo["ControlPointNumber"] + 1
+                    icpoi.NominalBeamEnergy = controlpointinfo["BeamEnergy"]
+                    icpoi.CumulativeMetersetWeight = controlpointinfo["CumulativeMetersetWeight"]+ sum(controlpointinfo["MetersetWeights"])
+                    icpoi.ScanSpotTuneID = 'TROTS_1.0'
+                    icpoi.NumberOfScanSpotPositions = len(controlpointinfo["MetersetWeights"])
+                    icpoi.ScanSpotPositionMap = controlpointinfo["ScanSpotPositions"]
+                    icpoi.ScanSpotMetersetWeights = [0.0 for i in range(len(controlpointinfo["MetersetWeights"]))]
+                    for (low,high),sigma in beamSigmas.items():
+                        if((controlpointinfo["BeamEnergy"]>=low) and (controlpointinfo["BeamEnergy"]<=high)):
+                            icpoi.ScanningSpotSize = [sigma[0],sigma[1]]
+                            break
+                    icpoi.NumberOfPaintings = 1
+                    be.IonControlPointSequence.append(icpoi)
+                be.PatientSetupNumber = 1
+                be.ToleranceTableNumber = 0 
+                ds.IonBeamSequence.append(be)
+            
+            ds.SOPClassUID = pydicom.uid.RTPlanStorage
+            ds.ReferencedStructureSetSequence = Sequence()
+            structds = Dataset()
+            structds.SOPClassUID = RTStructContent.SOPClassUID
+            structds.SOPInstanceUID = RTStructContent.SOPInstanceUID
+            ds.ReferencedStructureSetSequence.append(structds)
+            ds.ApprovalStatus = "APPROVED"
+            ds.ReviewDate = "20230308"
+            ds.ReviewTime = "104455"
+            ds.ReviewerName = ""
+            ds.save_as("./DICOMs/"+patientFolder+'/rtplan.dcm', enforce_file_format = True)
+        
+        patientIndexTot += 1
