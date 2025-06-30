@@ -469,4 +469,3 @@ for folder in caseFolders:
                 be.ToleranceTableNumber = 0 
                 ds.IonBeamSequence.append(be)
             
-        patientIndexTot += 1
