@@ -17,14 +17,22 @@ for folder in caseFolders:
         matFiles = [f.name for f in os.scandir('./'+folder)]
     except:
         continue
+    if(folder == 'Protons'):
+        try:
+            beamlistfolder = mat73.loadmat('./'+folder+'/BeamList.mat')
+            machinedata = mat73.loadmat('./'+folder+'/MachineData.mat')
+        except:
+            print("Note: Protons folder is missing BeamList.mat and MachineData.mat rtplan.dcm will not be created")
     for matFile in matFiles:
+        if((matFile!='BeamList.mat') and (matFile!='MachineData.mat')):
+            mat = mat73.loadmat(folder + '/' + matFile)
+        else:   
+            continue
         print('Folder and file:', folder, matFile)
         patientFolder = matFile.split('.')[0]
         patientIndexInt = int(patientFolder.split('_')[1])
         if patientFolder not in [f.name for f in os.scandir('./DICOMs/')]:
             os.mkdir('./DICOMs/'+patientFolder)
-
-        mat = mat73.loadmat(matFile)
         resolutionX = mat['patient']['Resolution'][0];
         resolutionY = mat['patient']['Resolution'][1];
         resolutionZ = mat['patient']['Resolution'][2];
@@ -100,7 +108,7 @@ for folder in caseFolders:
             ds.ImagePositionPatient = [format_number_as_ds(mat['patient']['Offset'][0]), format_number_as_ds(mat['patient']['Offset'][1]), format_number_as_ds(mat['patient']['Offset'][2] + resolutionZ*sliceIndex)]
             ds.ImageOrientationPatient = [1.000000, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000]
 
-            ds.SamplesPerPixel = 1ds.StudyTime
+            ds.SamplesPerPixel = 1
             ds.PhotometricInterpretation = "MONOCHROME2"
             ds.Rows = nRowsCT
             ds.Columns = nColumnsCT
@@ -261,20 +269,12 @@ for folder in caseFolders:
 
         rds.save_as("./DICOMs/"+patientFolder+'/rtstruct.dcm', write_like_original = False)
         
-        if(folder == 'Protons'):
-            beamlistfolder = mat73.loadmat('./'+folder+'/BeamList.mat')
-            
-            machinedata = mat73.loadmat('./'+folder+'/MachineData.mat')
-            beamSigmas = {}
-            for i in range(machinedata["BeamInfo"]["Sigma"].shape[0]):
-                if(machinedata["BeamInfo"]["EnergyRangeList"][i][0]<machinedata["BeamInfo"]["EnergyRangeList"][i][1]):
-                    beamSigmas[tuple([machinedata["BeamInfo"]["EnergyRangeList"][i][0],machinedata["BeamInfo"]["EnergyRangeList"][i][1]])] = machinedata["BeamInfo"]["Sigma"][i]
-                else:
-                    beamSigmas[tuple([machinedata["BeamInfo"]["EnergyRangeList"][i][1],machinedata["BeamInfo"]["EnergyRangeList"][i][0]])] = machinedata["BeamInfo"]["Sigma"][i]
-            SAD = [machinedata["BeamInfo"]["SAD"][0],machinedata["BeamInfo"]["SAD"][1]]
-            
+        if((folder == 'Protons') and ('beamlistfolder' in locals()) and ('machinedata' in locals())):
             # write rtplan
             print('Working on rtplan...')
+            beamSigmaEnergy = machinedata["BeamInfo"]["EnergyRangeList"]
+            beamSigmas = machinedata["BeamInfo"]["Sigma"]
+            SAD = [machinedata["BeamInfo"]["SAD"][0],machinedata["BeamInfo"]["SAD"][1]]
             meta = pydicom.Dataset()
             SOPInstanceUID = pydicom.uid.generate_uid()
             meta.MediaStorageSOPClassUID = pydicom.uid.RTPlanStorage
@@ -285,26 +285,26 @@ for folder in caseFolders:
             rtds.file_meta = meta
             rtds.SOPClassUID = pydicom.uid.RTPlanStorage
             rtds.SOPInstanceUID = SOPInstanceUID
-            rtds.StudyDate = ds.StudyDate
-            rtds.SeriesDate = ds.StudyDate
-            rtds.StudyTime = ds.StudyTime
-            rtds.AccessionNumber = ds.AccessionNumber
+            rtds.StudyDate = rds.StudyDate
+            rtds.SeriesDate = rds.StudyDate
+            rtds.StudyTime = rds.StudyTime
+            rtds.AccessionNumber = rds.AccessionNumber
             rtds.Modality = "RTPLAN"
             rtds.Manufacturer = ds.Manufacturer
             rtds.InstitutionName = ""
             rtds.ReferringPhysicianName = ""
             rtds.OperatorsName = ""
-            rtds.ManufacturerModelName    = ds.ManufacturerModelName
-            rtds.PatientName = ds.PatientName
-            rtds.PatientID = ds.PatientID
-            rtds.PatientBirthDate = ds.PatientBirthDate
-            rtds.PatientSex = ds.PatientSex
-            rtds.StudyInstanceUID = ds.StudyInstanceUID
-            rtds.SeriesInstanceUID = ds.StudyInstanceUID
-            rtds.StudyID = ds.StudyID
+            rtds.ManufacturerModelName    = ""
+            rtds.PatientName = rds.PatientName
+            rtds.PatientID = rds.PatientID
+            rtds.PatientBirthDate = rds.PatientBirthDate
+            rtds.PatientSex = rds.PatientSex
+            rtds.StudyInstanceUID = rds.StudyInstanceUID
+            rtds.SeriesInstanceUID = rds.StudyInstanceUID
+            rtds.StudyID = rds.StudyID
             rtds.SeriesNumber = 1
             rtds.InstanceNumber = 1 
-            rds.FrameOfReferenceUID = ds.FrameOfReferenceUID
+            rds.FrameOfReferenceUID = rds.FrameOfReferenceUID
             rtds.PositionReferenceIndicator = ''
             rtds.RTPlanDate = ""
             rtds.RTPlanTime = ""
@@ -439,10 +439,9 @@ for folder in caseFolders:
                     icpoi.NumberOfScanSpotPositions = len(controlpointinfo["MetersetWeights"])
                     icpoi.ScanSpotPositionMap = controlpointinfo["ScanSpotPositions"]
                     icpoi.ScanSpotMetersetWeights = controlpointinfo["MetersetWeights"]
-                    for (low,high),sigma in beamSigmas.items():
-                        if((controlpointinfo["BeamEnergy"]>=low) and (controlpointinfo["BeamEnergy"]<=high)):
-                            icpoi.ScanningSpotSize = [sigma[0],sigma[1]]
-                            break
+                    sigma1 = np.interp(controlpointinfo["BeamEnergy"],beamSigmaEnergy[:][0], beamSigmas[:][0])
+                    sigma2 = np.interp(controlpointinfo["BeamEnergy"],beamSigmaEnergy[:][1], beamSigmas[:][1])
+                    icpoi.ScanningSpotSize = [sigma1,sigma2]
                     icpoi.NumberOfPaintings = 1
                     be.IonControlPointSequence.append(icpoi)
                     
@@ -455,10 +454,7 @@ for folder in caseFolders:
                     icpoi.NumberOfScanSpotPositions = len(controlpointinfo["MetersetWeights"])
                     icpoi.ScanSpotPositionMap = controlpointinfo["ScanSpotPositions"]
                     icpoi.ScanSpotMetersetWeights = [0.0 for i in range(len(controlpointinfo["MetersetWeights"]))]
-                    for (low,high),sigma in beamSigmas.items():
-                        if((controlpointinfo["BeamEnergy"]>=low) and (controlpointinfo["BeamEnergy"]<=high)):
-                            icpoi.ScanningSpotSize = [sigma[0],sigma[1]]
-                            break
+                    icpoi.ScanningSpotSize = [sigma1,sigma2]
                     icpoi.NumberOfPaintings = 1
                     be.IonControlPointSequence.append(icpoi)
                 be.PatientSetupNumber = 1
