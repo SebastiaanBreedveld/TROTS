@@ -203,6 +203,9 @@ for folder in caseFolders:
                 if mat['patient']['Contours'][0][sliceIndex][structIndex] != None:
                     for subStructIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex])):
                         cdata = mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex]
+                        # last Point is always repeated, remove it, since we define CLOSED_PLANAR
+                        if (cdata[0] == cdata[-1]).all():
+                            cdata = cdata[:-1]
                         nPoints = cdata.shape[0]
                         Z = [mat['patient']['Offset'][2] + resolutionZ*sliceIndex] * nPoints
                         cdata = np.c_[cdata, Z]
