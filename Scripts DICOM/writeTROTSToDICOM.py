@@ -359,6 +359,8 @@ for folder in caseFolders:
                     controlpointinfo["BeamEnergy"] = row[1]
                     controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
                     controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][int(patientFolder[-2:])-1][rowindex][2:4].tolist()
+            beaminfo["FinalCumulativeMetersetWeight"] = controlpointinfo["CumulativeMetersetWeight"] + sum(controlpointinfo["MetersetWeights"])
+            beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
             currentbeamlist.append(beaminfo) 
             
             rtds.FractionGroupSequence = Sequence()
