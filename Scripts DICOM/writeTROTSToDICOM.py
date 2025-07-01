@@ -421,7 +421,8 @@ for folder in caseFolders:
                     icpoi.GantryRotationDirection = 'NONE'
                     icpoi.BeamLimitingDeviceAngle = mat['patient']['Beams']['BeamConfig'][beaminfo["FileBeamNumber"]-1]['Collimator']
                     icpoi.BeamLimitingDeviceRotationDirection = 'NONE'
-                    icpoi.PatientSupportAngle = mat['patient']['Beams']['BeamConfig'][beaminfo["FileBeamNumber"]-1]['Couch'] # I think...
+                    icpoi.PatientSupportAngle = mat['patient']['Beams']['BeamConfig'][beaminfo["FileBeamNumber"]-1]['Couch']
+
                     icpoi.PatientSupportRotationDirection = 'NONE'
                     
                     icpoi.TableTopVerticalPosition     = 0
