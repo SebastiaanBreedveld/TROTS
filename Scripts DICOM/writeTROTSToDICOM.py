@@ -136,6 +136,7 @@ for folder in caseFolders:
         rds.AccessionNumber = ds.AccessionNumber
         rds.Manufacturer = ds.Manufacturer
         rds.ReferringPhysicianName = ""
+        rds.OperatorsName = ""
         
         rds.StudyInstanceUID = ds.StudyInstanceUID
         rds.StudyID = ds.StudyID
@@ -154,7 +155,7 @@ for folder in caseFolders:
 
         rds.ReferencedFrameOfReferenceSequence = Sequence()
         rfor = Dataset()
-        rfor.ReferencedFrameOfReferenceUID = ds.FrameOfReferenceUID
+        rfor.FrameOfReferenceUID = ds.FrameOfReferenceUID
         # rfor.RTReferencedStudySequence = Sequence() # Optional
         # rrs = Dataset()
         # rrs.ReferencedSOPClassUID = 
@@ -191,6 +192,7 @@ for folder in caseFolders:
                 robs.RTROIInterpretedType = 'EXTERNAL'
             else:
                 robs.RTROIInterpretedType = 'OAR'
+            robs.ROIInterpreter = ''
             rds.RTROIObservationsSequence.append(robs)
             
             rc = Dataset()
