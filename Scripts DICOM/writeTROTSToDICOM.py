@@ -305,8 +305,9 @@ for folder in caseFolders:
             rtds.StudyID = rds.StudyID
             rtds.SeriesNumber = 1
             rtds.InstanceNumber = 1 
-            rds.FrameOfReferenceUID = rds.FrameOfReferenceUID
+            rtds.FrameOfReferenceUID = rds.FrameOfReferenceUID
             rtds.PositionReferenceIndicator = ''
+            rtds.RTPlanLabel = ""
             rtds.RTPlanDate = ""
             rtds.RTPlanTime = ""
             rtds.RTPlanGeometry = "PATIENT"
