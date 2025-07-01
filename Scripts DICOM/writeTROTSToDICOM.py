@@ -460,4 +460,5 @@ for folder in caseFolders:
                 be.PatientSetupNumber = 1
                 be.ToleranceTableNumber = 0 
                 rtds.IonBeamSequence.append(be)
-            
+            rtds.save_as("./DICOMs/"+patientFolder+'/rtplan.dcm', write_like_original = False)
+
