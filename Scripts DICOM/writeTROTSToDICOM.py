@@ -308,7 +308,7 @@ for folder in caseFolders:
             rtds.InstanceNumber = 1 
             rtds.FrameOfReferenceUID = rds.FrameOfReferenceUID
             rtds.PositionReferenceIndicator = ''
-            rtds.RTPlanLabel = ""
+            rtds.RTPlanLabel = "TROTs rtplan"
             rtds.RTPlanDate = ""
             rtds.RTPlanTime = ""
             rtds.RTPlanGeometry = "PATIENT"
@@ -326,7 +326,11 @@ for folder in caseFolders:
             beaminfo = {}
             beaminfo["BeamNumber"] = 1
             beaminfo["FileBeamNumber"] = int(beamlistfolder["BeamList"][patientIndex][0][0])
-            beaminfo["RangeShifter"] = beamlistfolder["BeamList"][patientIndex][0][4]
+            if(beamlistfolder["BeamList"][patientIndex][0][4]==0):
+                beaminfo["RangeShifters"] = []
+            else:
+                beaminfo["RangeShifters"] = [beamlistfolder["BeamList"][patientIndex][0][4]]
+            beaminfo["ConstantRangeShifter"] = True
             beaminfo["FinalCumulativeMetersetWeight"] = 0
             beaminfo["ControlPoints"] = []
             controlpointinfo = {}
@@ -335,10 +339,13 @@ for folder in caseFolders:
             controlpointinfo["MetersetWeights"] = []
             controlpointinfo["ScanSpotPositions"] = []
             controlpointinfo["CumulativeMetersetWeight"] = 0
+            controlpointinfo["RangeShifter"] = beamlistfolder["BeamList"][patientIndex][0][4]
             for rowindex in range(len(beamlistfolder["BeamList"][patientIndex])):
                 row = beamlistfolder["BeamList"][patientIndex][rowindex]
-                if(beaminfo["FileBeamNumber"] ==row[0] and beaminfo["RangeShifter"] == row[4]):
-                    if(controlpointinfo["BeamEnergy"]==row[1]):
+                if((row[4]!=0) and (row[4] not in beaminfo["RangeShifters"])):
+                    beaminfo["RangeShifters"].append(row[4])
+                if(beaminfo["FileBeamNumber"] ==row[0]):
+                    if((controlpointinfo["BeamEnergy"]==row[1]) and (controlpointinfo["RangeShifter"]==row[4])):
                         controlpointinfo["ScanSpotPositions"].extend(beamlistfolder["BeamList"][patientIndex][rowindex][2:4])
                         controlpointinfo["MetersetWeights"].append(mat["solutionX"][rowindex])
                     else:
@@ -348,13 +355,20 @@ for folder in caseFolders:
                         controlpointinfo["BeamEnergy"] = row[1]
                         controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
                         controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][patientIndex][rowindex][2:4].tolist()
+                        if(controlpointinfo["RangeShifter"]!=row[4]):
+                            controlpointinfo["RangeShifter"] = row[4]
+                            beaminfo["ConstantRangeShifter"] = False
                 else:
                     beaminfo["FinalCumulativeMetersetWeight"] = controlpointinfo["CumulativeMetersetWeight"] + sum(controlpointinfo["MetersetWeights"])
                     beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
                     currentbeamlist.append(copy.deepcopy(beaminfo))
                     beaminfo["BeamNumber"] = beaminfo["BeamNumber"] + 1
                     beaminfo["FileBeamNumber"] = int(row[0])
-                    beaminfo["RangeShifter"] = row[4]
+                    beaminfo["ConstantRangeShifter"] = True
+                    if(beamlistfolder["BeamList"][patientIndex][0][4]==0):
+                        beaminfo["RangeShifters"] = []
+                    else:
+                        beaminfo["RangeShifters"] = [beamlistfolder["BeamList"][patientIndex][0][4]]
                     beaminfo["FinalCumulativeMetersetWeight"] = 0
                     beaminfo["ControlPoints"] = []
                     controlpointinfo["CumulativeMetersetWeight"] = 0
@@ -362,6 +376,7 @@ for folder in caseFolders:
                     controlpointinfo["BeamEnergy"] = row[1]
                     controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
                     controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][patientIndex][rowindex][2:4].tolist()
+                    controlpointinfo["RangeShifter"] = row[4]
             beaminfo["FinalCumulativeMetersetWeight"] = controlpointinfo["CumulativeMetersetWeight"] + sum(controlpointinfo["MetersetWeights"])
             beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
             currentbeamlist.append(beaminfo) 
@@ -380,11 +395,11 @@ for folder in caseFolders:
                 fractionds.BeamSequence.append(be)
             rtds.FractionGroupSequence.append(fractionds)
             
-            rtds.StructureSet = Sequence()
+            rtds.ReferencedStructureSetSequence = Sequence()
             ref_rds = Dataset()
-            ref_rds.SOPClassUID = rds.SOPClassUID 
-            ref_rds.SOPInstanceUID = rds.SOPInstanceUID
-            rtds.StructureSet.append(ref_rds)
+            ref_rds.ReferencedSOPClassUID = rds.SOPClassUID 
+            ref_rds.ReferencedSOPInstanceUID = rds.SOPInstanceUID
+            rtds.ReferencedStructureSetSequence.append(ref_rds)
             
             totalMetersetWeightOfBeams = 0
             for beaminfo in currentbeamlist:
@@ -396,7 +411,7 @@ for folder in caseFolders:
                 be.InstitutionAddress = ""
                 be.PrimaryDosimeterUnit = "MU"
                 be.BeamNumber             = beaminfo["BeamNumber"]
-                be.BeamName               = ""
+                be.BeamName               = str(beaminfo["BeamNumber"])
                 be.BeamType               = 'STATIC'
                 be.RadiationType          = "PROTON"
                 be.TreatmentDeliveryType  = 'TREATMENT'
@@ -407,17 +422,19 @@ for folder in caseFolders:
                 be.FinalCumulativeMetersetWeight = beaminfo["FinalCumulativeMetersetWeight"]
                 be.ScanMode                   = 'MODULATED'
                 be.VirtualSourceAxisDistances = SAD
-                if(beaminfo["RangeShifter"] ==0):
+                if(len(beaminfo["RangeShifters"]) ==0):
                     be.NumberOfRangeShifters = 0
                 else:
-                    be.NumberOfRangeShifters = 1
+                    numberOfRangeShifters = len(beaminfo["RangeShifters"])
+                    be.NumberOfRangeShifters = numberOfRangeShifters
                     be.RangeShifterSequence = Sequence()
-                    rsDataset = Dataset()
-                    rsDataset.AccessoryCode = "Undefined Accessory Code"
-                    rsDataset.RangeShifterNumber = 1
-                    rsDataset.RangeShifterID = "Rs " + str(beaminfo["RangeShifter"]) + " mm"
-                    rsDataset.RangeShifterType = "BINARY"
-                    be.RangeShifterSequence.append(rsDataset)
+                    for RSindex in range(numberOfRangeShifters): 
+                        rsDataset = Dataset()
+                        rsDataset.AccessoryCode = "Undefined Accessory Code"
+                        rsDataset.RangeShifterNumber = RSindex + 1 
+                        rsDataset.RangeShifterID = "Rs " + str(beaminfo["RangeShifters"][RSindex]) + " mm"
+                        rsDataset.RangeShifterType = "BINARY"
+                        be.RangeShifterSequence.append(rsDataset)
                 be.NumberOfControlPoints  = 2*len(beaminfo["ControlPoints"])
                 be.IonControlPointSequence = Sequence()
                 be.NumberOfLateralSpreadingDevices = 0
@@ -456,6 +473,9 @@ for folder in caseFolders:
                     sigma2 = np.interp(controlpointinfo["BeamEnergy"],beamSigmaEnergy[:][1], beamSigmas[:][1])
                     icpoi.ScanningSpotSize = [sigma1,sigma2]
                     icpoi.NumberOfPaintings = 1
+                    if(((beaminfo["ConstantRangeShifter"]==False) or (controlpointinfo["ControlPointNumber"]==0)) and (controlpointinfo["RangeShifter"]!=0)):
+                        icpoi.RangeShifterSetting = "Rs " + str(controlpointinfo["RangeShifter"]) + " mm"
+                        icpoi.ReferencedRangeShifterNumber = beaminfo["RangeShifters"].index(controlpointinfo["RangeShifter"])  + 1
                     assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < 1e-9)
                     if(icpoi.NumberOfScanSpotPositions != 1):
                         totalMetersetWeightOfControlPoints += sum(icpoi.ScanSpotMetersetWeights)
