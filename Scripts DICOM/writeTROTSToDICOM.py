@@ -378,6 +378,13 @@ for folder in caseFolders:
                 fractionds.BeamSequence.append(be)
             rtds.FractionGroupSequence.append(fractionds)
             
+            rtds.StructureSet = Sequence()
+            ref_rds = Dataset()
+            ref_rds.SOPClassUID = rds.SOPClassUID 
+            ref_rds.SOPInstanceUID = rds.SOPInstanceUID
+            rtds.StructureSet.append(ref_rds)
+            
+            totalMetersetWeightOfBeams = 0
             for beaminfo in currentbeamlist:
                 be = Dataset()
                 be.Manufacturer = ""
@@ -415,6 +422,7 @@ for folder in caseFolders:
                 be.NumberOfRangeModulators = 0
                 be.PatientSupportType = 'TABLE'
                 
+                totalMetersetWeightOfControlPoints = 0
                 for controlpointinfo in beaminfo["ControlPoints"]:
                     icpoi = Dataset()
                     icpoi.NominalBeamEnergyUnit = 'MEV'
@@ -426,9 +434,7 @@ for folder in caseFolders:
                     icpoi.BeamLimitingDeviceAngle = mat['patient']['Beams']['BeamConfig'][beaminfo["FileBeamNumber"]-1]['Collimator']
                     icpoi.BeamLimitingDeviceRotationDirection = 'NONE'
                     icpoi.PatientSupportAngle = mat['patient']['Beams']['BeamConfig'][beaminfo["FileBeamNumber"]-1]['Couch']
-
                     icpoi.PatientSupportRotationDirection = 'NONE'
-                    
                     icpoi.TableTopVerticalPosition     = 0
                     icpoi.TableTopLongitudinalPosition = 0
                     icpoi.TableTopLateralPosition      = 0
@@ -448,6 +454,11 @@ for folder in caseFolders:
                     sigma2 = np.interp(controlpointinfo["BeamEnergy"],beamSigmaEnergy[:][1], beamSigmas[:][1])
                     icpoi.ScanningSpotSize = [sigma1,sigma2]
                     icpoi.NumberOfPaintings = 1
+                    assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < 1e-9)
+                    if(icpoi.NumberOfScanSpotPositions != 1):
+                        totalMetersetWeightOfControlPoints += sum(icpoi.ScanSpotMetersetWeights)
+                    else:
+                        totalMetersetWeightOfControlPoints += icpoi.ScanSpotMetersetWeights
                     be.IonControlPointSequence.append(icpoi)
                     
                     icpoi = Dataset()
@@ -461,9 +472,18 @@ for folder in caseFolders:
                     icpoi.ScanSpotMetersetWeights = [0.0 for i in range(len(controlpointinfo["MetersetWeights"]))]
                     icpoi.ScanningSpotSize = [sigma1,sigma2]
                     icpoi.NumberOfPaintings = 1
+                    assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < 1e-9)
+                    if(icpoi.NumberOfScanSpotPositions != 1):
+                        totalMetersetWeightOfControlPoints += sum(icpoi.ScanSpotMetersetWeights)
+                    else:
+                        totalMetersetWeightOfControlPoints += icpoi.ScanSpotMetersetWeights
                     be.IonControlPointSequence.append(icpoi)
                 be.PatientSetupNumber = 1
                 be.ToleranceTableNumber = 0 
+                assert(abs(be.FinalCumulativeMetersetWeight - icpoi.CumulativeMetersetWeight) < 1e-9)
+                assert(abs(be.FinalCumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < 1e-9)
                 rtds.IonBeamSequence.append(be)
+                totalMetersetWeightOfBeams += be.FinalCumulativeMetersetWeight
+            assert(abs(totalMetersetWeightOfBeams - sum(mat["solutionX"])) < 1e-9)
             rtds.save_as("./DICOMs/"+patientFolder+'/rtplan.dcm', write_like_original = False)
 
