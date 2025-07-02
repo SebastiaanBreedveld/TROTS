@@ -277,7 +277,8 @@ for folder in caseFolders:
             SAD = [machinedata["BeamInfo"]["SAD"][0],machinedata["BeamInfo"]["SAD"][1]]
             meta = pydicom.Dataset()
             SOPInstanceUID = pydicom.uid.generate_uid()
-            meta.MediaStorageSOPClassUID = pydicom.uid.RTPlanStorage
+            meta.MediaStorageSOPClassUID = pydicom.uid.RTIonPlanStorage
+
             meta.MediaStorageSOPInstanceUID = SOPInstanceUID
             meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian  
             
