@@ -320,7 +320,7 @@ for folder in caseFolders:
             patientSetup.PatientSetupLabel = "Standard"
             rtds.PatientSetupSequence.append(patientSetup)
             
-            patientIndexInt = int(patientFolder[-2:])-1
+            patientIndex = patientIndexInt-1
             rtds.IonBeamSequence = Sequence()
             currentbeamlist = []
             beaminfo = {}
