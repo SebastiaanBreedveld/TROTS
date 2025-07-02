@@ -406,7 +406,7 @@ for folder in caseFolders:
                 be.NumberOfBlocks         = 0
                 be.FinalCumulativeMetersetWeight = beaminfo["FinalCumulativeMetersetWeight"]
                 be.ScanMode                   = 'MODULATED'
-                be.SourceAxisDistance = SAD
+                be.VirtualSourceAxisDistances = SAD
                 if(beaminfo["RangeShifter"] ==0):
                     be.NumberOfRangeShifters = 0
                 else:
