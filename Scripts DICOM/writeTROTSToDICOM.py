@@ -325,21 +325,21 @@ for folder in caseFolders:
             currentbeamlist = []
             beaminfo = {}
             beaminfo["BeamNumber"] = 1
-            beaminfo["FileBeamNumber"] = int(beamlistfolder["BeamList"][patientIndexInt][0][0])
-            beaminfo["RangeShifter"] = beamlistfolder["BeamList"][patientIndexInt][0][4]
+            beaminfo["FileBeamNumber"] = int(beamlistfolder["BeamList"][patientIndex][0][0])
+            beaminfo["RangeShifter"] = beamlistfolder["BeamList"][patientIndex][0][4]
             beaminfo["FinalCumulativeMetersetWeight"] = 0
             beaminfo["ControlPoints"] = []
             controlpointinfo = {}
             controlpointinfo["ControlPointNumber"] = 0
-            controlpointinfo["BeamEnergy"] = beamlistfolder["BeamList"][patientIndexInt][0][1]
+            controlpointinfo["BeamEnergy"] = beamlistfolder["BeamList"][patientIndex][0][1]
             controlpointinfo["MetersetWeights"] = []
             controlpointinfo["ScanSpotPositions"] = []
             controlpointinfo["CumulativeMetersetWeight"] = 0
-            for rowindex in range(len(beamlistfolder["BeamList"][patientIndexInt])):
-                row = beamlistfolder["BeamList"][patientIndexInt][rowindex]
+            for rowindex in range(len(beamlistfolder["BeamList"][patientIndex])):
+                row = beamlistfolder["BeamList"][patientIndex][rowindex]
                 if(beaminfo["FileBeamNumber"] ==row[0] and beaminfo["RangeShifter"] == row[4]):
                     if(controlpointinfo["BeamEnergy"]==row[1]):
-                        controlpointinfo["ScanSpotPositions"].extend(beamlistfolder["BeamList"][patientIndexInt][rowindex][2:4])
+                        controlpointinfo["ScanSpotPositions"].extend(beamlistfolder["BeamList"][patientIndex][rowindex][2:4])
                         controlpointinfo["MetersetWeights"].append(mat["solutionX"][rowindex])
                     else:
                         beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
@@ -347,7 +347,7 @@ for folder in caseFolders:
                         controlpointinfo["ControlPointNumber"] += 1
                         controlpointinfo["BeamEnergy"] = row[1]
                         controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
-                        controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][patientIndexInt][rowindex][2:4].tolist()
+                        controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][patientIndex][rowindex][2:4].tolist()
                 else:
                     beaminfo["FinalCumulativeMetersetWeight"] = controlpointinfo["CumulativeMetersetWeight"] + sum(controlpointinfo["MetersetWeights"])
                     beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
@@ -361,7 +361,7 @@ for folder in caseFolders:
                     controlpointinfo["ControlPointNumber"] += 1
                     controlpointinfo["BeamEnergy"] = row[1]
                     controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
-                    controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][patientIndexInt][rowindex][2:4].tolist()
+                    controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][patientIndex][rowindex][2:4].tolist()
             beaminfo["FinalCumulativeMetersetWeight"] = controlpointinfo["CumulativeMetersetWeight"] + sum(controlpointinfo["MetersetWeights"])
             beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
             currentbeamlist.append(beaminfo) 
