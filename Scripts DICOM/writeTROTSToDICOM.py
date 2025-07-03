@@ -372,7 +372,7 @@ for folder in caseFolders:
                     beaminfo["FinalCumulativeMetersetWeight"] = 0
                     beaminfo["ControlPoints"] = []
                     controlpointinfo["CumulativeMetersetWeight"] = 0
-                    controlpointinfo["ControlPointNumber"] += 1
+                    controlpointinfo["ControlPointNumber"] = 0
                     controlpointinfo["BeamEnergy"] = row[1]
                     controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
                     controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][patientIndex][rowindex][2:4].tolist()
