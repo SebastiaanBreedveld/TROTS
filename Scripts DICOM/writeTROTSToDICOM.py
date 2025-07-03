@@ -390,7 +390,8 @@ for folder in caseFolders:
             fractionds.BeamSequence = Sequence()
             for beaminfo in currentbeamlist:
                 be = Dataset()
-                be.BeamMeterset = beaminfo["FinalCumulativeMetersetWeight"]
+                be.BeamMeterset = format_number_as_ds(beaminfo["FinalCumulativeMetersetWeight"])
+
                 be.BeamNumber = beaminfo["BeamNumber"]
                 fractionds.BeamSequence.append(be)
             rtds.FractionGroupSequence.append(fractionds)
@@ -419,7 +420,7 @@ for folder in caseFolders:
                 be.NumberOfCompensators   = 0
                 be.NumberOfBoli           = 0
                 be.NumberOfBlocks         = 0
-                be.FinalCumulativeMetersetWeight = beaminfo["FinalCumulativeMetersetWeight"]
+                be.FinalCumulativeMetersetWeight = format_number_as_ds(beaminfo["FinalCumulativeMetersetWeight"])
                 be.ScanMode                   = 'MODULATED'
                 be.VirtualSourceAxisDistances = SAD
                 if(len(beaminfo["RangeShifters"]) ==0):
@@ -446,8 +447,8 @@ for folder in caseFolders:
                     icpoi = Dataset()
                     icpoi.NominalBeamEnergyUnit = 'MEV'
                     icpoi.ControlPointIndex = 2*controlpointinfo["ControlPointNumber"]
-                    icpoi.NominalBeamEnergy = controlpointinfo["BeamEnergy"]
-                    icpoi.CumulativeMetersetWeight = controlpointinfo["CumulativeMetersetWeight"]
+                    icpoi.NominalBeamEnergy = format_number_as_ds(controlpointinfo["BeamEnergy"])
+                    icpoi.CumulativeMetersetWeight = format_number_as_ds(float(controlpointinfo["CumulativeMetersetWeight"]))
                     icpoi.GantryAngle = mat['patient']['Beams']['BeamConfig'][beaminfo["FileBeamNumber"]-1]['Gantry']
                     icpoi.GantryRotationDirection = 'NONE'
                     icpoi.BeamLimitingDeviceAngle = mat['patient']['Beams']['BeamConfig'][beaminfo["FileBeamNumber"]-1]['Collimator']
@@ -457,7 +458,7 @@ for folder in caseFolders:
                     icpoi.TableTopVerticalPosition     = 0
                     icpoi.TableTopLongitudinalPosition = 0
                     icpoi.TableTopLateralPosition      = 0
-                    icpoi.IsocenterPosition = mat["patient"]["Isocentre"].flatten().tolist()
+                    icpoi.IsocenterPosition = [format_number_as_ds(isp) for isp in mat["patient"]["Isocentre"].flatten()]
                     icpoi.TableTopPitchAngle = 0
                     icpoi.TableTopPitchRotationDirection = 'NONE'
                     icpoi.TableTopRollAngle = 0
@@ -475,15 +476,11 @@ for folder in caseFolders:
                     icpoi.NumberOfPaintings = 1
                     if((beaminfo["ConstantRangeShifter"]==False) or ((controlpointinfo["ControlPointNumber"]==0) and (controlpointinfo["RangeShifter"]!=0))):
                         icpoi.RangeShifterSettingsSequence = Sequence()
-                        rsSettings = Dataset()
-                        if(controlpointinfo["RangeShifter"]==0):
-                            rsSettings.RangeShifterSetting = "OUT"
-                            rsSettings.RangeShifterWaterEquivalentThickness = beaminfo["RangeShifters"][0]
-                            rsSettings.ReferencedRangeShifterNumber = 0
-                        else:
-                            rsSettings.RangeShifterSetting = "IN"
-                            rsSettings.RangeShifterWaterEquivalentThickness = controlpointinfo["RangeShifter"]
-                            rsSettings.ReferencedRangeShifterNumber = beaminfo["RangeShifters"].index(controlpointinfo["RangeShifter"])
+                        for RSindex in range(numberOfRangeShifters):
+                           rsSettings = Dataset()
+                           rsSettings.RangeShifterSetting = "OUT" if(controlpointinfo["RangeShifter"]==0) else "IN"
+                           rsSettings.RangeShifterWaterEquivalentThickness = beaminfo["RangeShifters"][RSindex]
+                           rsSettings.ReferencedRangeShifterNumber = RSindex
                         icpoi.RangeShifterSettingsSequence.append(rsSettings)
                     assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < 1e-9)
                     if(icpoi.NumberOfScanSpotPositions != 1):
@@ -495,8 +492,8 @@ for folder in caseFolders:
                     icpoi = Dataset()
                     icpoi.NominalBeamEnergyUnit = 'MEV'
                     icpoi.ControlPointIndex = 2*controlpointinfo["ControlPointNumber"] + 1
-                    icpoi.NominalBeamEnergy = controlpointinfo["BeamEnergy"]
-                    icpoi.CumulativeMetersetWeight = controlpointinfo["CumulativeMetersetWeight"]+ sum(controlpointinfo["MetersetWeights"])
+                    icpoi.NominalBeamEnergy = format_number_as_ds(controlpointinfo["BeamEnergy"])
+                    icpoi.CumulativeMetersetWeight = format_number_as_ds(controlpointinfo["CumulativeMetersetWeight"]+ sum(controlpointinfo["MetersetWeights"]))
                     icpoi.ScanSpotTuneID = 'TROTS_1.0'
                     icpoi.NumberOfScanSpotPositions = len(controlpointinfo["MetersetWeights"])
                     icpoi.ScanSpotPositionMap = controlpointinfo["ScanSpotPositions"]
