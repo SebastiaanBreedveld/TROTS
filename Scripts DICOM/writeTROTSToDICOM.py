@@ -18,8 +18,8 @@ for folder in caseFolders:
         continue
     for matFile in matFiles:
         print('Folder and file:', folder, matFile)
-        patientIndexInt = matFiles.index(matFile) + 1
-        patientFolder = f"{folder}_{patientIndexInt:02d}"
+        patientFolder = matFile.split('.')[0]
+        patientIndexInt = int(patientFolder.split('_')[1])
         if patientFolder not in [f.name for f in os.scandir('./DICOMs/')]:
             os.mkdir('./DICOMs/'+patientFolder)
 
@@ -140,11 +140,11 @@ for folder in caseFolders:
         rds.Manufacturer = ds.Manufacturer
         rds.ReferringPhysicianName = ""
         rds.OperatorsName = ""
-        
+
         rds.StudyInstanceUID = ds.StudyInstanceUID
         rds.StudyID = ds.StudyID
         rds.SeriesInstanceUID = pydicom.uid.generate_uid()
-        rds.SeriesNumber = 1        
+        rds.SeriesNumber = 1
         rds.SOPClassUID = pydicom.uid.RTStructureSetStorage
         rds.SOPInstanceUID = SOPInstanceUID
         rds.FrameOfReferenceUID = ds.FrameOfReferenceUID
@@ -153,7 +153,7 @@ for folder in caseFolders:
         rds.StructureSetLabel = "Contours"
         rds.StructureSetDate = ds.StudyDate
         rds.StructureSetTime = ds.StudyTime
-        
+
         rds.ApprovalStatus = "UNAPPROVED"
 
         rds.ReferencedFrameOfReferenceSequence = Sequence()
@@ -161,7 +161,7 @@ for folder in caseFolders:
         rfor.FrameOfReferenceUID = ds.FrameOfReferenceUID
         # rfor.RTReferencedStudySequence = Sequence() # Optional
         # rrs = Dataset()
-        # rrs.ReferencedSOPClassUID = 
+        # rrs.ReferencedSOPClassUID =
         # rfor.RTReferencedStudySequence.append(rrs)
         rds.ReferencedFrameOfReferenceSequence.append(rfor)
 
@@ -172,14 +172,14 @@ for folder in caseFolders:
         COLOR_PALETTE = sns.color_palette("hls", nROIs)
         for structIndex, structName in enumerate(mat['patient']['StructureNames']):
             print('Working on structure',structIndex+1,'(',structName,')...')
-            
+
             roi = Dataset()
             roi.ROINumber = structIndex + 1
             roi.ReferencedFrameOfReferenceUID = rds.FrameOfReferenceUID
             roi.ROIName = structName
             roi.ROIGenerationAlgorithm = ''
             rds.StructureSetROISequence.append(roi)
-            
+
             robs = Dataset()
             robs.ObservationNumber = structIndex + 1
             robs.ReferencedROINumber = structIndex + 1
@@ -197,23 +197,27 @@ for folder in caseFolders:
                 robs.RTROIInterpretedType = 'OAR'
             robs.ROIInterpreter = ''
             rds.RTROIObservationsSequence.append(robs)
-            
+
             rc = Dataset()
             rc.ROIDisplayColor = [int(c*255) for c in COLOR_PALETTE[structIndex]]
             rc.ReferencedROINumber = structIndex + 1
             rc.ContourSequence = Sequence()
             for sliceIndex in range(0, len(mat['patient']['Contours'][0])):
                 if mat['patient']['Contours'][0][sliceIndex][structIndex] != None:
-                    for subStructIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex])):
-                        cdata = mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex]
-                        # last Point is always repeated, remove it, since we define CLOSED_PLANAR
+                    keyHole = False # Both options lead to the same artefacts in Slicer3D: https://discourse.slicer.org/t/closedplanar-xor-visualization-artefact-with-holes-2d/43589/3
+                    if keyHole:
+                        singleContours = mat['patient']['Contours'][0][sliceIndex][structIndex]
+                        lSc = len(singleContours) - 1
+                        for sc in range(lSc):
+                            singleContours[-1] = np.vstack([singleContours[-1], singleContours[lSc - 1 - sc][-1]])
+                        cdata = np.vstack(singleContours)
                         if (cdata[0] == cdata[-1]).all():
                             cdata = cdata[:-1]
                         nPoints = cdata.shape[0]
                         Z = [mat['patient']['Offset'][2] + resolutionZ*sliceIndex] * nPoints
                         cdata = np.c_[cdata, Z]
                         cont = Dataset()
-                        cont.ContourGeometricType = 'CLOSED_PLANAR'
+                        cont.ContourGeometricType = 'CLOSED_PLANAR' # TODO inner/outer? https://dicom.innolitics.com/ciods/rt-structure-set/roi-contour/30060039/30060040/30060050
                         cont.NumberOfContourPoints = nPoints
                         cont.ContourData = [format_number_as_ds(cp) for cp in cdata.flatten()]
                         cont.ContourImageSequence = Sequence()
@@ -222,7 +226,26 @@ for folder in caseFolders:
                         ci.ReferencedSOPInstanceUID = ctsopids[sliceIndex]
                         cont.ContourImageSequence.append(ci)
                         rc.ContourSequence.append(cont)
+                    else:
+                        for subStructIndex in range(0, len(mat['patient']['Contours'][0][sliceIndex][structIndex])):
+                            cdata = mat['patient']['Contours'][0][sliceIndex][structIndex][subStructIndex]
+                            # last Point is always repeated, remove it, since we define CLOSED_PLANAR
+                            if (cdata[0] == cdata[-1]).all():
+                                cdata = cdata[:-1]
+                            nPoints = cdata.shape[0]
+                            Z = [mat['patient']['Offset'][2] + resolutionZ*sliceIndex] * nPoints
+                            cdata = np.c_[cdata, Z]
+                            cont = Dataset()
+                            cont.ContourGeometricType = 'CLOSEDPLANAR_XOR' # TODO inner/outer? https://dicom.innolitics.com/ciods/rt-structure-set/roi-contour/30060039/30060040/30060050
+                            cont.NumberOfContourPoints = nPoints
+                            cont.ContourData = [format_number_as_ds(cp) for cp in cdata.flatten()]
+                            cont.ContourImageSequence = Sequence()
+                            ci = Dataset()
+                            ci.ReferencedSOPClassUID = pydicom.uid.CTImageStorage
+                            ci.ReferencedSOPInstanceUID = ctsopids[sliceIndex]
+                            cont.ContourImageSequence.append(ci)
+                            rc.ContourSequence.append(cont)
             rds.ROIContourSequence.append(rc)
-            
+
 
         rds.save_as("./DICOMs/"+patientFolder+'/rtstruct.dcm', write_like_original = False)
