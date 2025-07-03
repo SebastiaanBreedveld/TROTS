@@ -372,6 +372,7 @@ for folder in caseFolders:
                     beaminfo["FinalCumulativeMetersetWeight"] = 0
                     beaminfo["ControlPoints"] = []
                     controlpointinfo["CumulativeMetersetWeight"] = 0
+
                     controlpointinfo["ControlPointNumber"] = 0
                     controlpointinfo["BeamEnergy"] = row[1]
                     controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
@@ -380,6 +381,58 @@ for folder in caseFolders:
             beaminfo["FinalCumulativeMetersetWeight"] = controlpointinfo["CumulativeMetersetWeight"] + sum(controlpointinfo["MetersetWeights"])
             beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
             currentbeamlist.append(beaminfo) 
+            
+            structToROINumber = {}
+            for struct in rds.StructureSetROISequence:
+                structToROINumber[struct.ROIName] = struct.ROINumber
+                
+            probleminfo = {}
+            for index in range(len(mat["problem"]["Name"])): #all elements of mat["problem"] are the same length 
+                key = (mat["problem"]["Name"][index],float(mat["problem"]["Weight"][index]))
+                if(key[0].lower()=="mu"):
+                    continue
+                if(key not in probleminfo):
+                    constraint = {}
+                    if (("gtv" in key[0].lower()) or ("ptv" in key[0].lower()) or ("ctv" in key[0].lower())):
+                        constraint["type"] = "TARGET" 
+                        if(mat["problem"]["Minimise"][index]==1):
+                            constraint["Min"] = mat["problem"]["Objective"][index]
+                            constraint["Max"] = ""
+                        else:
+                            constraint["Min"] = ""
+                            constraint["Max"] = mat["problem"]["Objective"][index]
+                    else:
+                        constraint["type"] = "ORGAN_AT_RISK"
+                        assert(mat["problem"]["Minimise"][index]==1)
+                        constraint["Max"] = mat["problem"]["Objective"][index]
+                    probleminfo[key] = constraint
+                else:
+                    assert(probleminfo[key]["type"]=="TARGET") # having upper and lower only make sense for target
+                    if(mat["problem"]["Minimise"]==1):
+                        assert(probleminfo[key]["Max"]=="")
+                        probleminfo[key]["Max"] = mat["problem"]["Objective"][index]
+                    else:
+                        assert(probleminfo[key]["Min"]=="")
+                        probleminfo[key]["Min"] = mat["problem"]["Objective"][index]
+                    
+            rtds.DoseReferenceSequence = Sequence()
+            for dosenumber,key in enumerate(probleminfo):
+                doseReference = Dataset()
+                doseReference.ReferencedROINumber = structToROINumber[key[0]]
+                doseReference.DoseReferenceNumber = dosenumber + 1
+                doseReference.DoseReferenceUID = pydicom.uid.generate_uid()
+                doseReference.DoseReferenceStructureType = "VOLUME"
+                doseReference.DoseReferenceDescription = key[0] + (" hard" if(key[1]==1) else " soft") + " constraint"
+                doseReference.DoseReferenceType = probleminfo[key]["type"]
+                doseReference.ConstraintWeight = key[1]
+                if(probleminfo[key]["type"] == "TARGET"):
+                    if(probleminfo[key]["Min"]!=""):
+                        doseReference.TargetMinimumDose = probleminfo[key]["Min"]
+                    if(probleminfo[key]["Max"]!=""):
+                        doseReference.TargetMaximumDose = probleminfo[key]["Max"]
+                else:
+                    doseReference.OrganAtRiskMaximumDose = probleminfo[key]["Max"]
+                rtds.DoseReferenceSequence.append(doseReference)
             
             rtds.FractionGroupSequence = Sequence()
             fractionds = Dataset()
