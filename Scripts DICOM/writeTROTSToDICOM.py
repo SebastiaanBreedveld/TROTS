@@ -4,8 +4,11 @@ import numpy as np
 import pydicom
 from pydicom.dataset import Dataset
 from pydicom.sequence import Sequence
+from pydicom.valuerep import format_number_as_ds
 import csv
 import seaborn as sns
+
+pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
 
 caseFolders = ['Prostate_CK', 'Head-and-Neck', 'Protons', 'Liver', 'Prostate_BT', 'Prostate_VMAT', 'Head-and-Neck-Alt']
 for folder in caseFolders:
@@ -61,7 +64,7 @@ for folder in caseFolders:
             ds.PatientBirthDate = ""
             ds.PatientSex = ""
             ds.PatientAge = ""
-            ds.SliceThickness = resolutionZ
+            ds.SliceThickness = format_number_as_ds(resolutionZ)
             ds.SpacingBetweenSlices = ds.SliceThickness
 
             ds.StudyDate = "20230308"
@@ -93,7 +96,7 @@ for folder in caseFolders:
 
             ds.InstanceNumber = sliceIndex + 1
             ds.PatientPosition = 'HFS'
-            ds.ImagePositionPatient = [mat['patient']['Offset'][0], mat['patient']['Offset'][1], mat['patient']['Offset'][2] + resolutionZ*sliceIndex]
+            ds.ImagePositionPatient = [format_number_as_ds(mat['patient']['Offset'][0]), format_number_as_ds(mat['patient']['Offset'][1]), format_number_as_ds(mat['patient']['Offset'][2] + resolutionZ*sliceIndex)]
             ds.ImageOrientationPatient = [1.000000, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000]
 
             ds.SamplesPerPixel = 1
@@ -212,7 +215,7 @@ for folder in caseFolders:
                         cont = Dataset()
                         cont.ContourGeometricType = 'CLOSED_PLANAR'
                         cont.NumberOfContourPoints = nPoints
-                        cont.ContourData = cdata.flatten().tolist()
+                        cont.ContourData = [format_number_as_ds(cp) for cp in cdata.flatten()]
                         cont.ContourImageSequence = Sequence()
                         ci = Dataset()
                         ci.ReferencedSOPClassUID = pydicom.uid.CTImageStorage
