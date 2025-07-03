@@ -73,7 +73,7 @@ for folder in caseFolders:
             ds.AccessionNumber = ""
             ds.Manufacturer = ""
             ds.InstitutionName = ""
-            ds.ReferringPhysiciansName = ""
+            ds.ReferringPhysicianName = ""
             ds.ImageType = ['ORIGINAL', 'PRIMARY', 'AXIAL']
 
             ds.ReferencedSOPClassUID = pydicom.uid.CTImageStorage
@@ -159,10 +159,21 @@ for folder in caseFolders:
         rds.ReferencedFrameOfReferenceSequence = Sequence()
         rfor = Dataset()
         rfor.FrameOfReferenceUID = ds.FrameOfReferenceUID
-        # rfor.RTReferencedStudySequence = Sequence() # Optional
-        # rrs = Dataset()
-        # rrs.ReferencedSOPClassUID =
-        # rfor.RTReferencedStudySequence.append(rrs)
+        rfor.RTReferencedStudySequence = Sequence() # Optional
+        rrs = Dataset()
+        rrs.ReferencedSOPClassUID = "1.2.840.10008.3.1.2.3.1" # Detached Study Management SOP Class (Retired)
+        rrs.ReferencedSOPInstanceUID = ds.StudyInstanceUID
+        rrs.RTReferencedSeriesSequence = Sequence()
+        ss = Dataset()
+        ss.SeriesInstanceUID = SeriesInstanceUID
+        ss.ContourImageSequence = Sequence()
+        for ctsopi in ctsopids.values():
+            ci = Dataset()
+            ci.ReferencedSOPClassUID = pydicom.uid.CTImageStorage
+            ci.ReferencedSOPInstanceUID = ctsopi
+            ss.ContourImageSequence.append(ci)
+        rrs.RTReferencedSeriesSequence.append(ss)
+        rfor.RTReferencedStudySequence.append(rrs)
         rds.ReferencedFrameOfReferenceSequence.append(rfor)
 
         rds.StructureSetROISequence = Sequence()
@@ -246,6 +257,5 @@ for folder in caseFolders:
                             cont.ContourImageSequence.append(ci)
                             rc.ContourSequence.append(cont)
             rds.ROIContourSequence.append(rc)
-
 
         rds.save_as("./DICOMs/"+patientFolder+'/rtstruct.dcm', write_like_original = False)
