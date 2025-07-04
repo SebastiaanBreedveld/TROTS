@@ -284,7 +284,7 @@ for folder in caseFolders:
             
             rtds = Dataset()
             rtds.file_meta = meta
-            rtds.SOPClassUID = pydicom.uid.RTPlanStorage
+            rtds.SOPClassUID = pydicom.uid.RTIonPlanStorage
             rtds.SOPInstanceUID = SOPInstanceUID
             rtds.StudyDate = rds.StudyDate
             rtds.SeriesDate = rds.StudyDate
@@ -422,7 +422,7 @@ for folder in caseFolders:
                 doseReference.DoseReferenceNumber = dosenumber + 1
                 doseReference.DoseReferenceUID = pydicom.uid.generate_uid()
                 doseReference.DoseReferenceStructureType = "VOLUME"
-                doseReference.DoseReferenceDescription = key[0] + (" hard" if(key[1]==1) else " soft") + " constraint"
+                doseReference.DoseReferenceDescription = key[0] + (" Constraint" if(key[1]==1) else " Objective")
                 doseReference.DoseReferenceType = probleminfo[key]["type"]
                 doseReference.ConstraintWeight = key[1]
                 if(probleminfo[key]["type"] == "TARGET"):
