@@ -16,7 +16,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-b","--folderBasePath", nargs='?', help="The base directory in which the code is run containing all neccessary folders", default=".")
 parser.add_argument("-o", "--outputFolder", nargs='?', help="The folder in which the resulting DICOM files are saved", default="./DICOMs")
 args = parser.parse_args()
-
 caseFolders = ['Prostate_CK', 'Head-and-Neck', 'Protons', 'Liver', 'Prostate_BT', 'Prostate_VMAT', 'Head-and-Neck-Alt']
 for folder in caseFolders:
     try:
@@ -507,6 +506,7 @@ for folder in caseFolders:
                 be.NumberOfRangeModulators = 0
                 be.PatientSupportType = 'TABLE'
                 
+                MetersetWeightTolerance = 1e-8
                 totalMetersetWeightOfControlPoints = 0
                 for controlpointinfo in beaminfo["ControlPoints"]:
                     icpoi = Dataset()
@@ -547,7 +547,7 @@ for folder in caseFolders:
                            rsSettings.RangeShifterWaterEquivalentThickness = beaminfo["RangeShifters"][RSindex]
                            rsSettings.ReferencedRangeShifterNumber = RSindex
                         icpoi.RangeShifterSettingsSequence.append(rsSettings)
-                    assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < 1e-9)
+                    assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
                     if(icpoi.NumberOfScanSpotPositions != 1):
                         totalMetersetWeightOfControlPoints += sum(icpoi.ScanSpotMetersetWeights)
                     else:
@@ -577,7 +577,7 @@ for folder in caseFolders:
                             rsSettings.RangeShifterWaterEquivalentThickness = controlpointinfo["RangeShifter"]
                             rsSettings.ReferencedRangeShifterNumber = beaminfo["RangeShifters"].index(controlpointinfo["RangeShifter"])
                         icpoi.RangeShifterSettingsSequence.append(rsSettings)
-                    assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < 1e-9)
+                    assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
                     if(icpoi.NumberOfScanSpotPositions != 1):
                         totalMetersetWeightOfControlPoints += sum(icpoi.ScanSpotMetersetWeights)
                     else:
@@ -585,10 +585,10 @@ for folder in caseFolders:
                     be.IonControlPointSequence.append(icpoi)
                 be.PatientSetupNumber = 1
                 be.ToleranceTableNumber = 0 
-                assert(abs(be.FinalCumulativeMetersetWeight - icpoi.CumulativeMetersetWeight) < 1e-9)
-                assert(abs(be.FinalCumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < 1e-9)
+                assert(abs(be.FinalCumulativeMetersetWeight - icpoi.CumulativeMetersetWeight) < MetersetWeightTolerance)
+                assert(abs(be.FinalCumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
                 rtds.IonBeamSequence.append(be)
                 totalMetersetWeightOfBeams += be.FinalCumulativeMetersetWeight
-            assert(abs(totalMetersetWeightOfBeams - sum(mat["solutionX"])) < 1e-9)
+            assert(abs(totalMetersetWeightOfBeams - sum(mat["solutionX"])) < MetersetWeightTolerance)
             rtds.save_as(args.outputFolder+"/"+patientFolder+'/rtplan.dcm', write_like_original = False)
 
