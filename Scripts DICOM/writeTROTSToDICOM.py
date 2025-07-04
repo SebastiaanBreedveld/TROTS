@@ -594,4 +594,5 @@ for folder in caseFolders:
                 totalMetersetWeightOfBeams += be.FinalCumulativeMetersetWeight
             assert(abs(totalMetersetWeightOfBeams - sum(mat["solutionX"])) < MetersetWeightTolerance)
             rtds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtplan.dcm', write_like_original = False)
+            print('DICOM files writen to ' + args.outputPath + "/DICOMs/"+patientFolder)
 
