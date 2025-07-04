@@ -41,8 +41,6 @@ for folder in caseFolders:
         os.makedirs(args.outputPath + "/DICOMs/" + patientFolder, exist_ok=True)
         patientFolder = matFile.split('.')[0]
         patientIndexInt = int(patientFolder.split('_')[1])
-        if patientFolder not in [f.name for f in os.scandir(args.outputPath + "/DICOMs/")]:
-            os.mkdir(args.outputPath + "/DICOMs/"+patientFolder)
         resolutionX = mat['patient']['Resolution'][0];
         resolutionY = mat['patient']['Resolution'][1];
         resolutionZ = mat['patient']['Resolution'][2];
