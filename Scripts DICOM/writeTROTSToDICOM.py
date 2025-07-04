@@ -7,8 +7,13 @@ import pydicom
 from pydicom.dataset import Dataset
 from pydicom.sequence import Sequence
 from pydicom.valuerep import format_number_as_ds
+from pydicom.tag import Tag
 import csv
 import seaborn as sns
+from scipy.interpolate import griddata
+
+def ConvertCTIndexToRealSpace(CTPoints, resolution, offset):
+    return resolution*(CTPoints - 1) + offset # -1 because matlab indexing starts at 1
 
 pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
 
@@ -597,3 +602,111 @@ for folder in caseFolders:
             rtds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtplan.dcm', write_like_original = False)
             print('DICOM files writen to ' + args.outputPath + "/DICOMs/"+patientFolder)
 
+            # write rtplan
+            print('Working on rtdose...')
+            meta = pydicom.Dataset()
+            SOPInstanceUID = pydicom.uid.generate_uid()
+            meta.MediaStorageSOPClassUID = pydicom.uid.RTDoseStorage
+            meta.MediaStorageSOPInstanceUID = SOPInstanceUID
+            meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
+            
+            doseds = Dataset()
+            doseds.file_meta = meta
+            doseds.SOPClassUID = pydicom.uid.RTDoseStorage
+            doseds.SOPInstanceUID = SOPInstanceUID
+            doseds.StudyDate = rds.StudyDate
+            doseds.SeriesDate = rds.StudyDate
+            doseds.SeriesDescription = "solutionX"
+            doseds.StudyTime = rds.StudyTime
+            doseds.AccessionNumber = rds.AccessionNumber
+            doseds.Modality = "RTDOSE"
+            doseds.Manufacturer = ds.Manufacturer
+            doseds.InstitutionName = ""
+            doseds.ReferringPhysicianName = ""
+            doseds.OperatorsName = ""
+            doseds.ManufacturerModelName    = ""
+            doseds.PatientName = rds.PatientName
+            doseds.PatientID = rds.PatientID
+            doseds.PatientBirthDate = rds.PatientBirthDate
+            doseds.PatientSex = rds.PatientSex
+            doseds.SliceThickness = ds.SliceThickness
+            doseds.StudyInstanceUID = rds.StudyInstanceUID
+            doseds.SeriesInstanceUID = rds.StudyInstanceUID
+            doseds.StudyID = rds.StudyID
+            doseds.SeriesNumber = 1
+            doseds.InstanceNumber = 1
+            doseds.ImagePositionPatient = ds.ImagePositionPatient 
+            doseds.ImageOrientationPatient = ds.ImageOrientationPatient
+            doseds.FrameOfReferenceUID = ds.FrameOfReferenceUID
+            doseds.SamplesPerPixel = ds.SamplesPerPixel
+            doseds.PhotometricInterpretation = ds.PhotometricInterpretation
+            doseds.FrameIncrementPointer = Tag(0x3004,0x000c)
+            doseds.Rows = ds.Rows
+            doseds.Columns = ds.Columns
+            doseds.PixelSpacing = ds.PixelSpacing
+            doseds.BitsAllocated = ds.BitsAllocated
+            doseds.BitsStored = ds.BitsStored
+            doseds.HighBit = ds.HighBit
+            doseds.PixelRepresentation = 0 
+            doseds.DoseUnits = "GY"
+            doseds.DoseType = "PHYSICAL"
+            doseds.DoseSummationType = "PLAN"
+            doseds.DoseGridScaling = 1
+            
+            doseds.ReferencedRTPlanSequence = Sequence()
+            seqrt = Dataset()
+            seqrt.ReferencedSOPClassUID = rtds.SOPClassUID
+            seqrt.ReferencedSOPInstanceUID = rtds.SOPInstanceUID
+            doseds.ReferencedRTPlanSequence.append(seqrt)
+            
+            resolution = mat["patient"]["Resolution"]
+            offset = mat["patient"]["Offset"]
+            
+            CTIndexDoseEdges = np.stack([mat["patient"]["DoseBox"][:, 0] - 1, mat["patient"]["DoseBox"][:, 1] + 1])
+            DoseEdges = ConvertCTIndexToRealSpace(CTIndexDoseEdges, resolution, offset)
+            SampledPoints = [np.array([[DoseEdges[0,0], DoseEdges[0,1],DoseEdges[0,2]]]),
+                             np.array([[DoseEdges[1,0], DoseEdges[0,1],DoseEdges[0,2]]]),
+                             np.array([[DoseEdges[1,0], DoseEdges[1,1],DoseEdges[0,2]]]),
+                             np.array([[DoseEdges[1,0], DoseEdges[1,1],DoseEdges[1,2]]]),
+                             np.array([[DoseEdges[0,0], DoseEdges[0,1],DoseEdges[1,2]]]),
+                             np.array([[DoseEdges[0,0], DoseEdges[1,1],DoseEdges[1,2]]]),
+                             np.array([[DoseEdges[0,0], DoseEdges[1,1],DoseEdges[0,2]]]),
+                             np.array([[DoseEdges[1,0], DoseEdges[0,1],DoseEdges[1,2]]])]
+            SampledDoses = [0.0 for i in range(len(SampledPoints))]
+            
+            for matrix in mat["data"]["matrix"]:
+            
+                if((matrix["A"].shape[0] > 1) and (np.any(matrix["A"].nonzero()[0]<0)==False)):
+                    if(matrix["Name"] in mat["patient"]["StructureNames"]):
+                        structIdx = mat["patient"]["StructureNames"].index(matrix["Name"])
+                    else:
+                        continue
+            
+                    if(matrix["A"].shape[0]==mat["patient"]["SampledVoxels"][structIdx].shape[1]):
+                        SampledDosePart = matrix["A"]*mat["solutionX"] + matrix["b"]
+                    elif (((matrix["A"].shape[0] % 9)==0) and (matrix["A"].shape[0]/9==mat["patient"]["SampledVoxels"][structIdx].shape[1])):
+                        SampledDosePart = matrix["A"][:int(matrix["A"].shape[0]/9)]*mat["solutionX"] + matrix["b"]
+                    else:
+                        raise ValueError("")
+            
+                    SampledPoints.append(ConvertCTIndexToRealSpace(mat["patient"]["SampledVoxels"][structIdx].T, resolution, offset))
+                    SampledDoses.extend(SampledDosePart)
+            SampledPoints = np.vstack(SampledPoints)
+            SampledDoses = np.array(SampledDoses)
+            
+            mask = np.zeros_like(mat["patient"]["CT"])
+            db=mat["patient"]["DoseBox"]
+            mask[db[0, 0]-1:db[0, 1],db[1, 0]-1:db[1, 1],db[2, 0]-1:db[2, 1]] = True
+            mask[np.where(mat["patient"]["CT"]<=-1024)] = False
+            
+            CTIndicesToCalculate = np.vstack(np.where(mask)).T + 1 # matlab indices start at 1
+            PointsToCalculate = ConvertCTIndexToRealSpace(CTIndicesToCalculate, resolution, offset)
+            
+            CalculatedDoseValues = griddata(SampledPoints, SampledDoses, PointsToCalculate, method="linear")
+            dose = np.zeros_like(mat["patient"]["CT"])
+            dose[mask==1] = CalculatedDoseValues
+            doseds.PixelData = dose.flatten().tobytes()
+            doseds.NumberOfFrames = dose.shape[2]
+            doseds.GridFrameOffsetVector = [ConvertCTIndexToRealSpace(np.array([0,0,i+1]), resolution, offset)[2] for i in range(dose.shape[2])]
+            
+            doseds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtdose.dcm', write_like_original = False)
