@@ -388,7 +388,9 @@ for folder in caseFolders:
                 
             probleminfo = {}
             for index in range(len(mat["problem"]["Name"])): #all elements of mat["problem"] are the same length 
-                key = (mat["problem"]["Name"][index],float(mat["problem"]["Weight"][index]))
+                # All problem info is grouped accordinding to the unique key = (Structure name, weight, is constraint)
+                # If two rows have the same key they are merged one being the upper and other being the lower bound 
+                key = (mat["problem"]["Name"][index],float(mat["problem"]["Weight"][index]),bool(mat["problem"]["IsConstraint"][index]))
                 if(key[0].lower()=="mu"):
                     continue
                 if(key not in probleminfo):
@@ -402,12 +404,16 @@ for folder in caseFolders:
                             constraint["Min"] = ""
                             constraint["Max"] = mat["problem"]["Objective"][index]
                     else:
+                        # If it isn't a TARGET it must be a ORGAN_AT_RISK
                         constraint["type"] = "ORGAN_AT_RISK"
+                        # ORGAN_AT_RISK can only have an upper bound
                         assert(mat["problem"]["Minimise"][index]==1)
                         constraint["Max"] = mat["problem"]["Objective"][index]
                     probleminfo[key] = constraint
                 else:
+                    # Only TARGET can have both upper and lower bound
                     assert(probleminfo[key]["type"]=="TARGET") # having upper and lower only make sense for target
+                    # Only one upper and one lower can be defined for one key in a TARGET
                     if(mat["problem"]["Minimise"]==1):
                         assert(probleminfo[key]["Max"]=="")
                         probleminfo[key]["Max"] = mat["problem"]["Objective"][index]
@@ -422,7 +428,7 @@ for folder in caseFolders:
                 doseReference.DoseReferenceNumber = dosenumber + 1
                 doseReference.DoseReferenceUID = pydicom.uid.generate_uid()
                 doseReference.DoseReferenceStructureType = "VOLUME"
-                doseReference.DoseReferenceDescription = key[0] + (" Constraint" if(key[1]==1) else " Objective")
+                doseReference.DoseReferenceDescription = key[0] + (" Constraint" if(key[2]) else " Objective")
                 doseReference.DoseReferenceType = probleminfo[key]["type"]
                 doseReference.ConstraintWeight = key[1]
                 if(probleminfo[key]["type"] == "TARGET"):
