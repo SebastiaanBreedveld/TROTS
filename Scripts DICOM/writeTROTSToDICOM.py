@@ -20,6 +20,7 @@ caseFolders = ['Prostate_CK', 'Head-and-Neck', 'Protons', 'Liver', 'Prostate_BT'
 for folder in caseFolders:
     try:
         matFiles = [f.name for f in os.scandir(args.folderBasePath+"/"+folder)]
+        matFiles.sort()
     except:
         continue
     if(folder == 'Protons'):
