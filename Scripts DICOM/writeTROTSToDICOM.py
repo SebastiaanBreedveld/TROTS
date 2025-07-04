@@ -14,8 +14,10 @@ pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-b","--folderBasePath", nargs='?', help="The base directory in which the code is run containing all neccessary folders", default=".")
-parser.add_argument("-o", "--outputFolder", nargs='?', help="The folder in which the resulting DICOM files are saved", default="./DICOMs")
+parser.add_argument("-o", "--outputPath", nargs='?', help="The output directory of the DICOM file", default=".")
 args = parser.parse_args()
+
+
 caseFolders = ['Prostate_CK', 'Head-and-Neck', 'Protons', 'Liver', 'Prostate_BT', 'Prostate_VMAT', 'Head-and-Neck-Alt']
 for folder in caseFolders:
     try:
@@ -35,10 +37,11 @@ for folder in caseFolders:
         else:   
             continue
         print('Folder and file:', folder, matFile)
+        os.makedirs(args.outputPath + "/DICOMs/", exist_ok=True)
         patientFolder = matFile.split('.')[0]
         patientIndexInt = int(patientFolder.split('_')[1])
-        if patientFolder not in [f.name for f in os.scandir(args.outputFolder)]:
-            os.mkdir(args.outputFolder+"/"+patientFolder)
+        if patientFolder not in [f.name for f in os.scandir(args.outputPath + "/DICOMs/")]:
+            os.mkdir(args.outputPath + "/DICOMs/"+patientFolder)
         resolutionX = mat['patient']['Resolution'][0];
         resolutionY = mat['patient']['Resolution'][1];
         resolutionZ = mat['patient']['Resolution'][2];
@@ -48,7 +51,7 @@ for folder in caseFolders:
         nSlicesCT = ctshape[2] # DICOM slices, goes with z
         ctsopids = {}
         # write planning objectives into csv
-        with open(args.outputFolder+"/"+patientFolder+'/planning.csv', 'w', newline = '') as csvfile:
+        with open(args.outputPath + "/DICOMs/"+patientFolder+'/planning.csv', 'w', newline = '') as csvfile:
             filewriter = csv.writer(csvfile)
             if folder != 'Prostate_BT':
                 filewriter.writerow(['Beam angle', 'Couch angle', 'Collimator'])
@@ -132,7 +135,7 @@ for folder in caseFolders:
 
             ds.PixelData = np.array(np.swapaxes(mat['patient']['CT'][:,:,sliceIndex],0,1)+1024).tobytes()
 
-            ds.save_as(args.outputFolder+"/"+patientFolder+'/CTSlice'+str(sliceIndex).zfill(3)+".dcm", write_like_original = False)
+            ds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/CTSlice'+str(sliceIndex).zfill(3)+".dcm", write_like_original = False)
 
         # write RTStruct
         meta = pydicom.Dataset()
@@ -273,7 +276,7 @@ for folder in caseFolders:
                             rc.ContourSequence.append(cont)
             rds.ROIContourSequence.append(rc)
 
-        rds.save_as(args.outputFolder+"/"+patientFolder+'/rtstruct.dcm', write_like_original = False)
+        rds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtstruct.dcm', write_like_original = False)
         
         if((folder == 'Protons') and ('beamlistfolder' in locals()) and ('machinedata' in locals())):
             # write rtplan
@@ -591,5 +594,5 @@ for folder in caseFolders:
                 rtds.IonBeamSequence.append(be)
                 totalMetersetWeightOfBeams += be.FinalCumulativeMetersetWeight
             assert(abs(totalMetersetWeightOfBeams - sum(mat["solutionX"])) < MetersetWeightTolerance)
-            rtds.save_as(args.outputFolder+"/"+patientFolder+'/rtplan.dcm', write_like_original = False)
+            rtds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtplan.dcm', write_like_original = False)
 
