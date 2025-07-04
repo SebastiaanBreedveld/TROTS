@@ -14,7 +14,7 @@ pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-b","--folderBasePath", nargs='?', help="The base directory in which the code is run containing all neccessary folders", default=".")
-parser.add_argument("-o", "--outputPath", nargs='?', help="The output directory of the DICOM file", default=".")
+parser.add_argument("-o", "--outputPath", nargs='?', help="The output directory of the DICOM file", default="/tmp")
 args = parser.parse_args()
 
 
@@ -24,6 +24,7 @@ for folder in caseFolders:
         matFiles = [f.name for f in os.scandir(args.folderBasePath+"/"+folder)]
         matFiles.sort()
     except:
+        print('No mat files found in folder ' + args.folderBasePath+"/" + folder + '. Skipping.')
         continue
     if(folder == 'Protons'):
         try:
@@ -35,12 +36,12 @@ for folder in caseFolders:
     for matFile in matFiles:
         if((matFile!='BeamList.mat') and (matFile!='MachineData.mat')):
             mat = mat73.loadmat(args.folderBasePath+"/"+folder + '/' + matFile)
-        else:   
+        else:
             continue
         print('Folder and file:', folder, matFile)
-        os.makedirs(args.outputPath + "/DICOMs/" + patientFolder, exist_ok=True)
         patientFolder = matFile.split('.')[0]
         patientIndexInt = int(patientFolder.split('_')[1])
+        os.makedirs(args.outputPath + "/DICOMs/" + patientFolder, exist_ok=True)
         resolutionX = mat['patient']['Resolution'][0];
         resolutionY = mat['patient']['Resolution'][1];
         resolutionZ = mat['patient']['Resolution'][2];
@@ -62,7 +63,7 @@ for folder in caseFolders:
                 filewriter.writerow([mat['problem']['Name'][rowIndex]] + [mat['problem']['Minimise'][rowIndex]] + [mat['problem']['Objective'][rowIndex]] + [mat['problem']['Sufficient'][rowIndex]] + [mat['problem']['Weight'][rowIndex]] + [mat['problem']['Priority'][rowIndex]] + [mat['problem']['IsConstraint'][rowIndex]])
 
         for sliceIndex in range(0, nSlicesCT):
-            print('Working on CT slice',sliceIndex,'...')
+            # print('Working on CT slice',sliceIndex,'...')
             if sliceIndex == 0:
                 ReferencedSOPInstanceUID = pydicom.uid.generate_uid()
                 StudyInstanceUID = pydicom.uid.generate_uid()
@@ -276,7 +277,7 @@ for folder in caseFolders:
             rds.ROIContourSequence.append(rc)
 
         rds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtstruct.dcm', write_like_original = False)
-        
+
         if((folder == 'Protons') and ('beamlistfolder' in locals()) and ('machinedata' in locals())):
             # write rtplan
             print('Working on rtplan...')
@@ -288,8 +289,8 @@ for folder in caseFolders:
             meta.MediaStorageSOPClassUID = pydicom.uid.RTIonPlanStorage
 
             meta.MediaStorageSOPInstanceUID = SOPInstanceUID
-            meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian  
-            
+            meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
+
             rtds = Dataset()
             rtds.file_meta = meta
             rtds.SOPClassUID = pydicom.uid.RTIonPlanStorage
@@ -313,21 +314,21 @@ for folder in caseFolders:
             rtds.SeriesInstanceUID = rds.StudyInstanceUID
             rtds.StudyID = rds.StudyID
             rtds.SeriesNumber = 1
-            rtds.InstanceNumber = 1 
+            rtds.InstanceNumber = 1
             rtds.FrameOfReferenceUID = rds.FrameOfReferenceUID
             rtds.PositionReferenceIndicator = ''
             rtds.RTPlanLabel = "TROTS solutionX"
             rtds.RTPlanDate = ""
             rtds.RTPlanTime = ""
             rtds.RTPlanGeometry = "PATIENT"
-            
+
             rtds.PatientSetupSequence = Sequence()
             patientSetup = Dataset()
             patientSetup.PatientPosition = mat["patient"]["PatientPosition"]
             patientSetup.PatientSetupNumber = 1
             patientSetup.PatientSetupLabel = "Standard"
             rtds.PatientSetupSequence.append(patientSetup)
-            
+
             patientIndex = patientIndexInt-1
             rtds.IonBeamSequence = Sequence()
             currentbeamlist = []
@@ -388,23 +389,23 @@ for folder in caseFolders:
                     controlpointinfo["RangeShifter"] = row[4]
             beaminfo["FinalCumulativeMetersetWeight"] = controlpointinfo["CumulativeMetersetWeight"] + sum(controlpointinfo["MetersetWeights"])
             beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
-            currentbeamlist.append(beaminfo) 
-            
+            currentbeamlist.append(beaminfo)
+
             structToROINumber = {}
             for struct in rds.StructureSetROISequence:
                 structToROINumber[struct.ROIName] = struct.ROINumber
-                
+
             probleminfo = {}
-            for index in range(len(mat["problem"]["Name"])): #all elements of mat["problem"] are the same length 
+            for index in range(len(mat["problem"]["Name"])): #all elements of mat["problem"] are the same length
                 # All problem info is grouped accordinding to the unique key = (Structure name, weight, is constraint)
-                # If two rows have the same key they are merged one being the upper and other being the lower bound 
+                # If two rows have the same key they are merged one being the upper and other being the lower bound
                 key = (mat["problem"]["Name"][index],float(mat["problem"]["Weight"][index]),bool(mat["problem"]["IsConstraint"][index]))
                 if(key[0].lower()=="mu"):
                     continue
                 if(key not in probleminfo):
                     constraint = {}
                     if (("gtv" in key[0].lower()) or ("ptv" in key[0].lower()) or ("ctv" in key[0].lower())):
-                        constraint["type"] = "TARGET" 
+                        constraint["type"] = "TARGET"
                         if(mat["problem"]["Minimise"][index]==1):
                             constraint["Min"] = mat["problem"]["Objective"][index]
                             constraint["Max"] = ""
@@ -428,7 +429,7 @@ for folder in caseFolders:
                     else:
                         assert(probleminfo[key]["Min"]=="")
                         probleminfo[key]["Min"] = mat["problem"]["Objective"][index]
-                    
+
             rtds.DoseReferenceSequence = Sequence()
             for dosenumber,key in enumerate(probleminfo):
                 doseReference = Dataset()
@@ -438,16 +439,16 @@ for folder in caseFolders:
                 doseReference.DoseReferenceStructureType = "VOLUME"
                 doseReference.DoseReferenceDescription = key[0] + (" Constraint" if(key[2]) else " Objective")
                 doseReference.DoseReferenceType = probleminfo[key]["type"]
-                doseReference.ConstraintWeight = format_number_as_ds(key[1])
+                doseReference.ConstraintWeight = format_number_as_ds(float(key[1]))
                 if(probleminfo[key]["type"] == "TARGET"):
                     if(probleminfo[key]["Min"]!=""):
-                        doseReference.TargetMinimumDose = format_number_as_ds(probleminfo[key]["Min"])
+                        doseReference.TargetMinimumDose = format_number_as_ds(float(probleminfo[key]["Min"]))
                     if(probleminfo[key]["Max"]!=""):
-                        doseReference.TargetMaximumDose = format_number_as_ds(probleminfo[key]["Max"])
+                        doseReference.TargetMaximumDose = format_number_as_ds(float(probleminfo[key]["Max"]))
                 else:
-                    doseReference.OrganAtRiskMaximumDose = format_number_as_ds(probleminfo[key]["Max"])
+                    doseReference.OrganAtRiskMaximumDose = format_number_as_ds(float(probleminfo[key]["Max"]))
                 rtds.DoseReferenceSequence.append(doseReference)
-            
+
             rtds.FractionGroupSequence = Sequence()
             fractionds = Dataset()
             fractionds.FractionGroupNumber = 1
@@ -462,13 +463,13 @@ for folder in caseFolders:
                 be.BeamNumber = beaminfo["BeamNumber"]
                 fractionds.BeamSequence.append(be)
             rtds.FractionGroupSequence.append(fractionds)
-            
+
             rtds.ReferencedStructureSetSequence = Sequence()
             ref_rds = Dataset()
-            ref_rds.ReferencedSOPClassUID = rds.SOPClassUID 
+            ref_rds.ReferencedSOPClassUID = rds.SOPClassUID
             ref_rds.ReferencedSOPInstanceUID = rds.SOPInstanceUID
             rtds.ReferencedStructureSetSequence.append(ref_rds)
-            
+
             totalMetersetWeightOfBeams = 0
             for beaminfo in currentbeamlist:
                 be = Dataset()
@@ -496,7 +497,7 @@ for folder in caseFolders:
                     numberOfRangeShifters = len(beaminfo["RangeShifters"])
                     be.NumberOfRangeShifters = numberOfRangeShifters
                     be.RangeShifterSequence = Sequence()
-                    for RSindex in range(numberOfRangeShifters): 
+                    for RSindex in range(numberOfRangeShifters):
                         rsDataset = Dataset()
                         rsDataset.AccessoryCode = "Undefined Accessory Code"
                         rsDataset.RangeShifterNumber = RSindex
@@ -508,7 +509,7 @@ for folder in caseFolders:
                 be.NumberOfLateralSpreadingDevices = 0
                 be.NumberOfRangeModulators = 0
                 be.PatientSupportType = 'TABLE'
-                
+
                 MetersetWeightTolerance = 1e-8
                 totalMetersetWeightOfControlPoints = 0
                 for controlpointinfo in beaminfo["ControlPoints"]:
@@ -556,7 +557,7 @@ for folder in caseFolders:
                     else:
                         totalMetersetWeightOfControlPoints += icpoi.ScanSpotMetersetWeights
                     be.IonControlPointSequence.append(icpoi)
-                    
+
                     icpoi = Dataset()
                     icpoi.NominalBeamEnergyUnit = 'MEV'
                     icpoi.ControlPointIndex = 2*controlpointinfo["ControlPointNumber"] + 1
@@ -587,7 +588,7 @@ for folder in caseFolders:
                         totalMetersetWeightOfControlPoints += icpoi.ScanSpotMetersetWeights
                     be.IonControlPointSequence.append(icpoi)
                 be.PatientSetupNumber = 1
-                be.ToleranceTableNumber = 0 
+                be.ToleranceTableNumber = 0
                 assert(abs(be.FinalCumulativeMetersetWeight - icpoi.CumulativeMetersetWeight) < MetersetWeightTolerance)
                 assert(abs(be.FinalCumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
                 rtds.IonBeamSequence.append(be)
