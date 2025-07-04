@@ -38,7 +38,7 @@ for folder in caseFolders:
         else:   
             continue
         print('Folder and file:', folder, matFile)
-        os.makedirs(args.outputPath + "/DICOMs/", exist_ok=True)
+        os.makedirs(args.outputPath + "/DICOMs/" + patientFolder, exist_ok=True)
         patientFolder = matFile.split('.')[0]
         patientIndexInt = int(patientFolder.split('_')[1])
         if patientFolder not in [f.name for f in os.scandir(args.outputPath + "/DICOMs/")]:
