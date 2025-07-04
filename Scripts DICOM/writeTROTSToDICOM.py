@@ -30,7 +30,8 @@ for folder in caseFolders:
             beamlistfolder = mat73.loadmat(args.folderBasePath+"/"+folder+'/BeamList.mat')
             machinedata = mat73.loadmat(args.folderBasePath+"/"+folder+'/MachineData.mat')
         except:
-            print("Note: Protons folder is missing BeamList.mat and MachineData.mat rtplan.dcm will not be created")
+            print("Note: Protons folder is missing BeamList.mat and MachineData.mat, thus rtplan.dcm will not be created")
+
     for matFile in matFiles:
         if((matFile!='BeamList.mat') and (matFile!='MachineData.mat')):
             mat = mat73.loadmat(args.folderBasePath+"/"+folder + '/' + matFile)
