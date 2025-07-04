@@ -440,17 +440,13 @@ for folder in caseFolders:
                 doseReference.DoseReferenceDescription = key[0] + (" Constraint" if(key[2]) else " Objective")
                 doseReference.DoseReferenceType = probleminfo[key]["type"]
                 doseReference.ConstraintWeight = format_number_as_ds(key[1])
-
                 if(probleminfo[key]["type"] == "TARGET"):
                     if(probleminfo[key]["Min"]!=""):
                         doseReference.TargetMinimumDose = format_number_as_ds(probleminfo[key]["Min"])
-
                     if(probleminfo[key]["Max"]!=""):
                         doseReference.TargetMaximumDose = format_number_as_ds(probleminfo[key]["Max"])
-
                 else:
                     doseReference.OrganAtRiskMaximumDose = format_number_as_ds(probleminfo[key]["Max"])
-
                 rtds.DoseReferenceSequence.append(doseReference)
             
             rtds.FractionGroupSequence = Sequence()
