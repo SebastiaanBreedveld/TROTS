@@ -317,7 +317,7 @@ for folder in caseFolders:
             rtds.InstanceNumber = 1
             rtds.FrameOfReferenceUID = rds.FrameOfReferenceUID
             rtds.PositionReferenceIndicator = ''
-            rtds.RTPlanLabel = "TROTS solutionX"
+            rtds.RTPlanLabel = "TROTS 66/54 Gy"
             rtds.RTPlanDate = ""
             rtds.RTPlanTime = ""
             rtds.RTPlanGeometry = "PATIENT"
