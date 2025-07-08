@@ -631,11 +631,11 @@ for folder in caseFolders:
             doseds.PatientSex = rds.PatientSex
             doseds.SliceThickness = ds.SliceThickness
             doseds.StudyInstanceUID = rds.StudyInstanceUID
-            doseds.SeriesInstanceUID = rds.StudyInstanceUID
+            doseds.SeriesInstanceUID = pydicom.uid.generate_uid()
             doseds.StudyID = rds.StudyID
             doseds.SeriesNumber = 1
             doseds.InstanceNumber = 1
-            doseds.ImagePositionPatient = ds.ImagePositionPatient 
+            doseds.ImagePositionPatient = [format_number_as_ds(mat['patient']['Offset'][0]), format_number_as_ds(mat['patient']['Offset'][1]), format_number_as_ds(mat['patient']['Offset'][2])]
             doseds.ImageOrientationPatient = ds.ImageOrientationPatient
             doseds.FrameOfReferenceUID = ds.FrameOfReferenceUID
             doseds.SamplesPerPixel = ds.SamplesPerPixel
@@ -705,8 +705,10 @@ for folder in caseFolders:
             CalculatedDoseValues = griddata(SampledPoints, SampledDoses, PointsToCalculate, method="linear")
             dose = np.zeros_like(mat["patient"]["CT"])
             dose[mask==1] = CalculatedDoseValues
-            doseds.PixelData = dose.flatten().tobytes()
+            doseds.PixelData = np.moveaxis(np.moveaxis(dose, 2, 0), 2, 1).flatten().tobytes()
+
             doseds.NumberOfFrames = dose.shape[2]
-            doseds.GridFrameOffsetVector = [ConvertCTIndexToRealSpace(np.array([0,0,i+1]), resolution, offset)[2] for i in range(dose.shape[2])]
+            doseds.GridFrameOffsetVector = [format_number_as_ds(ConvertCTIndexToRealSpace(np.array([0,0,i+1]), resolution, offset)[2]) for i in range(dose.shape[2])]
+
             
             doseds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtdose.dcm', write_like_original = False)
