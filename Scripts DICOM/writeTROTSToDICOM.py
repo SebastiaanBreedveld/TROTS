@@ -18,11 +18,12 @@ def ConvertCTIndexToRealSpace(CTPoints, resolution, offset):
 pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--Manufacturer", nargs='?', help="The name of the manufacturer to be safed in the DICOMs", default="")
-parser.add_argument("--ManufacturerModelName", nargs='?', help="The name of the manufacturer model to be safed in the DICOMs", default="")
-parser.add_argument("--InstitutionName", nargs='?', help="The name of the Institution to be safed in the DICOMs", default="")
-parser.add_argument("--ReferringPhysicianName", nargs='?', help="The name of the referring physician to be safed in the DICOMs", default="")
-parser.add_argument("--OperatorsName", nargs='?', help="The name of the operators to be safed in the DICOMs", default="")
+parser.add_argument("--Manufacturer", nargs='?', help="The name of the manufacturer to be saved in the DICOMs", default="")
+parser.add_argument("--ManufacturerModelName", nargs='?', help="The name of the manufacturer model to be saved in the DICOMs", default="")
+parser.add_argument("--InstitutionName", nargs='?', help="The name of the Institution to be saved in the DICOMs", default="")
+parser.add_argument("--ReferringPhysicianName", nargs='?', help="The name of the referring physician to be saved in the DICOMs", default="")
+parser.add_argument("--OperatorsName", nargs='?', help="The name of the operators to be saved in the DICOMs", default="")
+
 parser.add_argument("-b","--folderBasePath", nargs='?', help="The base directory in which the code is run containing all neccessary folders", default=".")
 parser.add_argument("-o", "--outputPath", nargs='?', help="The output directory of the DICOM file", default="/tmp")
 parser.add_argument("-n", "--DoseBeamNumber", type=list, nargs='?', help="A list of numbers to be calculated where a seperate rtdose_<BeamNumber>.dcm is calculated,, format: [BeamNumber_i, ..]", default=[])
