@@ -18,6 +18,11 @@ def ConvertCTIndexToRealSpace(CTPoints, resolution, offset):
 pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--Manufacturer", nargs='?', help="The name of the manufacturer to be safed in the DICOMs", default="")
+parser.add_argument("--ManufacturerModelName", nargs='?', help="The name of the manufacturer model to be safed in the DICOMs", default="")
+parser.add_argument("--InstitutionName", nargs='?', help="The name of the Institution to be safed in the DICOMs", default="")
+parser.add_argument("--ReferringPhysicianName", nargs='?', help="The name of the referring physician to be safed in the DICOMs", default="")
+parser.add_argument("--OperatorsName", nargs='?', help="The name of the operators to be safed in the DICOMs", default="")
 parser.add_argument("-b","--folderBasePath", nargs='?', help="The base directory in which the code is run containing all neccessary folders", default=".")
 parser.add_argument("-o", "--outputPath", nargs='?', help="The output directory of the DICOM file", default="/tmp")
 parser.add_argument("-n", "--DoseBeamNumber", type=list, nargs='?', help="A list of numbers to be calculated where a seperate rtdose_<BeamNumber>.dcm is calculated,, format: [BeamNumber_i, ..]", default=[])
@@ -96,9 +101,9 @@ for folder in caseFolders:
             ds.StudyTime = "104455"
             ds.StudyDescription = "RT optimizers"
             ds.AccessionNumber = ""
-            ds.Manufacturer = ""
-            ds.InstitutionName = ""
-            ds.ReferringPhysicianName = ""
+            ds.Manufacturer = args.Manufacturer
+            ds.InstitutionName = args.InstitutionName
+            ds.ReferringPhysicianName = args.ReferringPhysicianName
             ds.ImageType = ['ORIGINAL', 'PRIMARY', 'AXIAL']
 
             ds.ReferencedSOPClassUID = pydicom.uid.CTImageStorage
@@ -162,9 +167,9 @@ for folder in caseFolders:
         rds.StudyDate = ds.StudyDate
         rds.StudyTime = ds.StudyTime
         rds.AccessionNumber = ds.AccessionNumber
-        rds.Manufacturer = ds.Manufacturer
-        rds.ReferringPhysicianName = ""
-        rds.OperatorsName = ""
+        rds.Manufacturer = args.Manufacturer
+        rds.ReferringPhysicianName = args.ReferringPhysicianName
+        rds.OperatorsName = args.OperatorsName
 
         rds.StudyInstanceUID = ds.StudyInstanceUID
         rds.StudyID = ds.StudyID
@@ -308,11 +313,11 @@ for folder in caseFolders:
             rtds.StudyTime = rds.StudyTime
             rtds.AccessionNumber = rds.AccessionNumber
             rtds.Modality = "RTPLAN"
-            rtds.Manufacturer = ds.Manufacturer
-            rtds.InstitutionName = ""
-            rtds.ReferringPhysicianName = ""
-            rtds.OperatorsName = ""
-            rtds.ManufacturerModelName    = ""
+            rtds.Manufacturer = args.Manufacturer
+            rtds.InstitutionName = args.InstitutionName
+            rtds.ReferringPhysicianName = args.ReferringPhysicianName
+            rtds.OperatorsName = args.OperatorsName
+            rtds.ManufacturerModelName    = args.ManufacturerModelName
             rtds.PatientName = rds.PatientName
             rtds.PatientID = rds.PatientID
             rtds.PatientBirthDate = rds.PatientBirthDate
@@ -492,9 +497,9 @@ for folder in caseFolders:
             totalMetersetWeightOfBeams = 0
             for beaminfo in currentbeamlist:
                 be = Dataset()
-                be.Manufacturer = ""
-                be.InstitutionName  = ""
-                be.ManufacturerModelName  = ""
+                be.Manufacturer = args.Manufacturer
+                be.InstitutionName  = args.InstitutionName
+                be.ManufacturerModelName  = args.ManufacturerModelName
                 be.TreatmentMachineName   = ""
                 be.InstitutionAddress = ""
                 be.PrimaryDosimeterUnit = "MU"
@@ -633,11 +638,11 @@ for folder in caseFolders:
             doseds.StudyTime = rds.StudyTime
             doseds.AccessionNumber = rds.AccessionNumber
             doseds.Modality = "RTDOSE"
-            doseds.Manufacturer = ds.Manufacturer
-            doseds.InstitutionName = ""
-            doseds.ReferringPhysicianName = ""
-            doseds.OperatorsName = ""
-            doseds.ManufacturerModelName    = ""
+            doseds.Manufacturer = args.Manufacturer
+            doseds.InstitutionName = args.InstitutionName
+            doseds.ReferringPhysicianName = args.ReferringPhysicianName
+            doseds.OperatorsName = args.OperatorsName
+            doseds.ManufacturerModelName    = args.ManufacturerModelName
             doseds.PatientName = rds.PatientName
             doseds.PatientID = rds.PatientID
             doseds.PatientBirthDate = rds.PatientBirthDate
