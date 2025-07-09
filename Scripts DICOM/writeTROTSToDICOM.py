@@ -87,7 +87,7 @@ for folder in caseFolders:
 
             ds.StudyDate = "20230308"
             ds.StudyTime = "104455"
-            ds.StudyDescription = "RT optimizers"
+            ds.StudyDescription = "RT optimizers https://sebastiaanbreedveld.nl/trots/"
             ds.AccessionNumber = ""
             ds.Manufacturer = ""
             ds.InstitutionName = ""
