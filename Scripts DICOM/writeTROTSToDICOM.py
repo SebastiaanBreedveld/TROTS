@@ -20,9 +20,9 @@ pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
 parser = argparse.ArgumentParser()
 parser.add_argument("-b","--folderBasePath", nargs='?', help="The base directory in which the code is run containing all neccessary folders", default=".")
 parser.add_argument("-o", "--outputPath", nargs='?', help="The output directory of the DICOM file", default="/tmp")
-parser.add_argument("-n", "--DoseBeamNumber", type=list, nargs='?', help="A list of numbers to be calculated where a seperate rtdose_<ControlPointNumber>.dcm is calculated,, format: [BeamNumber_i, ..]", default=[])
+parser.add_argument("-n", "--DoseBeamNumber", type=list, nargs='?', help="A list of numbers to be calculated where a seperate rtdose_<BeamNumber>.dcm is calculated,, format: [BeamNumber_i, ..]", default=[])
 parser.add_argument("-c", "--DoseControlPoints", type=list, nargs='?', help="A list of control point numbers where a seperate rtdose_<BeamNumber>_<ControlPointNumber>.dcm is calculated, format: [(BeamNumber_i,ControlPoint_i), ...]", default=[])
-parser.add_argument("-s", "--DoseBeamSpots", type=list, nargs='?', help="A list of beam spot numbers where the rtdose_<BeamNumber>_<CConrolPointNumber>_<BeamSpotNumber>.dcm is calculated, format: [(BeamNumber_i,ControlPoint_i,BeamSpotNumber_i), ...]", default=[])
+parser.add_argument("-s", "--DoseBeamSpots", type=list, nargs='?', help="A list of beam spot numbers where the rtdose_<BeamNumber>_<ConrolPointNumber>_<BeamSpotNumber>.dcm is calculated, format: [(BeamNumber_i,ControlPoint_i,BeamSpotNumber_i), ...]", default=[])
 args = parser.parse_args()
 
 caseFolders = ['Prostate_CK', 'Head-and-Neck', 'Protons', 'Liver', 'Prostate_BT', 'Prostate_VMAT', 'Head-and-Neck-Alt']
