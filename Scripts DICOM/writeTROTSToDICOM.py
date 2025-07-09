@@ -614,7 +614,6 @@ for folder in caseFolders:
                 totalMetersetWeightOfBeams += be.FinalCumulativeMetersetWeight
             assert(abs(totalMetersetWeightOfBeams - sum(mat["solutionX"])) < MetersetWeightTolerance)
             rtds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtplan.dcm', write_like_original = False)
-            print('DICOM files writen to ' + args.outputPath + "/DICOMs/"+patientFolder)
 
             # write rtplan
             print('Working on rtdose...')
@@ -852,3 +851,5 @@ for folder in caseFolders:
                     bsdoseds.PixelData = np.moveaxis(np.moveaxis(dose, 2, 0), 2, 1).flatten().tobytes()
 
                 bsdoseds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtdose_'+str(beamSpotNumber[0])+'_'+str(beamSpotNumber[1])+'_'+str(beamSpotNumber[2])+'.dcm', write_like_original = False)
+        
+        print('DICOM files writen to ' + args.outputPath + "/DICOMs/"+patientFolder)
