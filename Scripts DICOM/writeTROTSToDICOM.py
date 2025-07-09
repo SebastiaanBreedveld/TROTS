@@ -12,23 +12,19 @@ import csv
 import seaborn as sns
 from scipy.interpolate import griddata
 
-def ConvertCTIndexToRealSpace(CTPoints, resolution, offset):
-    return resolution*(CTPoints - 1) + offset # -1 because matlab indexing starts at 1
-
 pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--Manufacturer", nargs='?', help="The name of the manufacturer to be saved in the DICOMs", default="")
-parser.add_argument("--ManufacturerModelName", nargs='?', help="The name of the manufacturer model to be saved in the DICOMs", default="")
-parser.add_argument("--InstitutionName", nargs='?', help="The name of the Institution to be saved in the DICOMs", default="")
-parser.add_argument("--ReferringPhysicianName", nargs='?', help="The name of the referring physician to be saved in the DICOMs", default="")
-parser.add_argument("--OperatorsName", nargs='?', help="The name of the operators to be saved in the DICOMs", default="")
-
+parser.add_argument("--Manufacturer", nargs='?', help="The name of the manufacturer to be safed in the DICOMs", default="")
+parser.add_argument("--ManufacturerModelName", nargs='?', help="The name of the manufacturer model to be safed in the DICOMs", default="")
+parser.add_argument("--InstitutionName", nargs='?', help="The name of the Institution to be safed in the DICOMs", default="")
+parser.add_argument("--ReferringPhysicianName", nargs='?', help="The name of the referring physician to be safed in the DICOMs", default="")
+parser.add_argument("--OperatorsName", nargs='?', help="The name of the operators to be safed in the DICOMs", default="")
 parser.add_argument("-b","--folderBasePath", nargs='?', help="The base directory in which the code is run containing all neccessary folders", default=".")
 parser.add_argument("-o", "--outputPath", nargs='?', help="The output directory of the DICOM file", default="/tmp")
-parser.add_argument("-n", "--DoseBeamNumber", type=list, nargs='?', help="A list of numbers to be calculated where a seperate rtdose_<BeamNumber>.dcm is calculated,, format: [BeamNumber_i, ..]", default=[])
-parser.add_argument("-c", "--DoseControlPoints", type=list, nargs='?', help="A list of control point numbers where a seperate rtdose_<BeamNumber>_<ControlPointNumber>.dcm is calculated, format: [(BeamNumber_i,ControlPoint_i), ...]", default=[])
-parser.add_argument("-s", "--DoseBeamSpots", type=list, nargs='?', help="A list of beam spot numbers where the rtdose_<BeamNumber>_<ConrolPointNumber>_<BeamSpotNumber>.dcm is calculated, format: [(BeamNumber_i,ControlPoint_i,BeamSpotNumber_i), ...]", default=[])
+parser.add_argument("-n", "--DoseBeamNumber", type=list, nargs='?', help="A list of beam numbers to be calculated where a separate rtdose_<BeamNumber>.dcm is calculated, format: [BeamNumber_i, ..]. By default, all beams will be included.", default=None)
+parser.add_argument("-c", "--DoseControlPoints", type=list, nargs='?', help="A list of control point numbers where a separate rtdose_<BeamNumber>_<ControlPointNumber>.dcm is calculated, format: [(BeamNumber_i,ControlPoint_i), ...]", default=[])
+parser.add_argument("-s", "--DoseBeamSpots", type=list, nargs='?', help="A list of beam spot numbers where the rtdose_<BeamNumber>_<ControlPointNumber>_<BeamSpotNumber>.dcm is calculated, format: [(BeamNumber_i,ControlPoint_i,BeamSpotNumber_i), ...]", default=[])
 args = parser.parse_args()
 
 caseFolders = ['Prostate_CK', 'Head-and-Neck', 'Protons', 'Liver', 'Prostate_BT', 'Prostate_VMAT', 'Head-and-Neck-Alt']
@@ -45,7 +41,7 @@ for folder in caseFolders:
             machinedata = mat73.loadmat(args.folderBasePath+"/"+folder+'/MachineData.mat')
         except:
             print("Note: Protons folder is missing BeamList.mat and MachineData.mat, thus rtplan.dcm will not be created")
-
+    
     for matFile in matFiles:
         if((matFile!='BeamList.mat') and (matFile!='MachineData.mat')):
             mat = mat73.loadmat(args.folderBasePath+"/"+folder + '/' + matFile)
@@ -364,7 +360,7 @@ for folder in caseFolders:
             controlpointinfo["ScanSpotPositions"] = []
             controlpointinfo["CumulativeMetersetWeight"] = 0
             controlpointinfo["RangeShifter"] = beamlistfolder["BeamList"][patientIndex][0][4]
-            controlpointinfo["FileIndexStart"] = 0 
+            controlpointinfo["FileIndexStart"] = 0
             controlpointinfo["FileIndexEnd"] = 0
             for rowindex in range(len(beamlistfolder["BeamList"][patientIndex])):
                 row = beamlistfolder["BeamList"][patientIndex][rowindex]
@@ -628,14 +624,14 @@ for folder in caseFolders:
             meta.MediaStorageSOPClassUID = pydicom.uid.RTDoseStorage
             meta.MediaStorageSOPInstanceUID = SOPInstanceUID
             meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
-            
+
             doseds = Dataset()
             doseds.file_meta = meta
             doseds.SOPClassUID = pydicom.uid.RTDoseStorage
             doseds.SOPInstanceUID = SOPInstanceUID
             doseds.StudyDate = rds.StudyDate
             doseds.SeriesDate = rds.StudyDate
-            doseds.SeriesDescription = "solutionX"
+            doseds.SeriesDescription = "solutionX Plan"
             doseds.StudyTime = rds.StudyTime
             doseds.AccessionNumber = rds.AccessionNumber
             doseds.Modality = "RTDOSE"
@@ -654,100 +650,107 @@ for folder in caseFolders:
             doseds.StudyID = rds.StudyID
             doseds.SeriesNumber = 1
             doseds.InstanceNumber = 1
-            doseds.ImagePositionPatient = [format_number_as_ds(mat['patient']['Offset'][0]), format_number_as_ds(mat['patient']['Offset'][1]), format_number_as_ds(mat['patient']['Offset'][2])]
+            db=mat["patient"]["DoseBox"]
+            resolution = mat["patient"]["Resolution"]
+            poffset = mat["patient"]["Offset"]
+            doseds.ImagePositionPatient = [format_number_as_ds(poffset[i] + (db[i][0] - 1)*resolution[i]) for i in range(3)]
             doseds.ImageOrientationPatient = ds.ImageOrientationPatient
             doseds.FrameOfReferenceUID = ds.FrameOfReferenceUID
             doseds.SamplesPerPixel = ds.SamplesPerPixel
             doseds.PhotometricInterpretation = ds.PhotometricInterpretation
             doseds.FrameIncrementPointer = Tag(0x3004,0x000c)
-            doseds.Rows = ds.Rows
-            doseds.Columns = ds.Columns
+            doseds.Rows = int(db[1][1] - db[1][0] + 1)
+            doseds.Columns = int(db[0][1] - db[0][0] + 1)
+            doseds.NumberOfFrames = db[2][1] - db[2][0] + 1
+            doseds.GridFrameOffsetVector = [format_number_as_ds(doseds.ImagePositionPatient[2] + dz*resolution[2]) for dz in range(doseds.NumberOfFrames)]
             doseds.PixelSpacing = ds.PixelSpacing
             doseds.BitsAllocated = ds.BitsAllocated
             doseds.BitsStored = ds.BitsStored
             doseds.HighBit = ds.HighBit
-            doseds.PixelRepresentation = 0 
+            doseds.PixelRepresentation = 0
             doseds.DoseUnits = "GY"
             doseds.DoseType = "PHYSICAL"
             doseds.DoseSummationType = "PLAN"
             doseds.DoseGridScaling = 1
             doseds.PositionReferenceIndicator = ds.PositionReferenceIndicator
-            
+
             doseds.ReferencedRTPlanSequence = Sequence()
             seqrt = Dataset()
             seqrt.ReferencedSOPClassUID = rtds.SOPClassUID
             seqrt.ReferencedSOPInstanceUID = rtds.SOPInstanceUID
             doseds.ReferencedRTPlanSequence.append(seqrt)
             
-            resolution = mat["patient"]["Resolution"]
-            offset = mat["patient"]["Offset"]
-            
-            CTIndexDoseEdges = np.stack([mat["patient"]["DoseBox"][:, 0] - 1, mat["patient"]["DoseBox"][:, 1] + 1])
-            DoseEdges = ConvertCTIndexToRealSpace(CTIndexDoseEdges, resolution, offset)
-            SampledPoints = [np.array([[DoseEdges[0,0], DoseEdges[0,1],DoseEdges[0,2]]]),
-                             np.array([[DoseEdges[1,0], DoseEdges[0,1],DoseEdges[0,2]]]),
-                             np.array([[DoseEdges[1,0], DoseEdges[1,1],DoseEdges[0,2]]]),
-                             np.array([[DoseEdges[1,0], DoseEdges[1,1],DoseEdges[1,2]]]),
-                             np.array([[DoseEdges[0,0], DoseEdges[0,1],DoseEdges[1,2]]]),
-                             np.array([[DoseEdges[0,0], DoseEdges[1,1],DoseEdges[1,2]]]),
-                             np.array([[DoseEdges[0,0], DoseEdges[1,1],DoseEdges[0,2]]]),
-                             np.array([[DoseEdges[1,0], DoseEdges[0,1],DoseEdges[1,2]]])]
-            SampledDoses = [0.0 for i in range(len(SampledPoints))]
-            
+            SampledIndices = [np.array([[db[0,0], db[1,0], db[2,0]]]),
+                              np.array([[db[0,1], db[1,0], db[2,0]]]),
+                              np.array([[db[0,1], db[1,1], db[2,0]]]),
+                              np.array([[db[0,0], db[1,1], db[2,0]]]),
+                              np.array([[db[0,0], db[1,0], db[2,1]]]),
+                              np.array([[db[0,1], db[1,1], db[2,1]]]),
+                              np.array([[db[0,1], db[1,0], db[2,1]]]),
+                              np.array([[db[0,0], db[1,1], db[2,1]]])]
+            SampledDoses = [0.0 for i in range(len(SampledIndices))]
+
             for matrix in mat["data"]["matrix"]:
-            
                 if((matrix["A"].shape[0] > 1) and (np.any(matrix["A"].nonzero()[0]<0)==False)):
                     if(matrix["Name"] in mat["patient"]["StructureNames"]):
                         structIdx = mat["patient"]["StructureNames"].index(matrix["Name"])
                     else:
                         continue
-            
+
                     if(matrix["A"].shape[0]==mat["patient"]["SampledVoxels"][structIdx].shape[1]):
                         SampledDosePart = matrix["A"]*mat["solutionX"] + matrix["b"]
                     elif (((matrix["A"].shape[0] % 9)==0) and (matrix["A"].shape[0]/9==mat["patient"]["SampledVoxels"][structIdx].shape[1])):
                         SampledDosePart = matrix["A"][:int(matrix["A"].shape[0]/9)]*mat["solutionX"] + matrix["b"]
                     else:
                         raise ValueError("")
-            
-                    SampledPoints.append(ConvertCTIndexToRealSpace(mat["patient"]["SampledVoxels"][structIdx].T, resolution, offset))
+
+                    SampledIndices.extend(mat["patient"]["SampledVoxels"][structIdx].T)
                     SampledDoses.extend(SampledDosePart)
-            SampledPoints = np.vstack(SampledPoints)
+            SampledIndices = np.vstack(SampledIndices)
             SampledDoses = np.array(SampledDoses)
-            
-            mask = np.zeros_like(mat["patient"]["CT"])
-            db=mat["patient"]["DoseBox"]
-            mask[db[0, 0]-1:db[0, 1],db[1, 0]-1:db[1, 1],db[2, 0]-1:db[2, 1]] = True
-            mask[np.where(mat["patient"]["CT"]<=-1024)] = False
-            
-            CTIndicesToCalculate = np.vstack(np.where(mask)).T + 1 # matlab indices start at 1
-            PointsToCalculate = ConvertCTIndexToRealSpace(CTIndicesToCalculate, resolution, offset)
 
-            dose = np.zeros_like(mat["patient"]["CT"])
-            dose[mask==1] = griddata(SampledPoints, SampledDoses, PointsToCalculate, method="linear")
-            doseds.PixelData = np.moveaxis(np.moveaxis(dose, 2, 0), 2, 1).flatten().tobytes()
-
-            doseds.NumberOfFrames = dose.shape[2]
-            doseds.GridFrameOffsetVector = [format_number_as_ds(ConvertCTIndexToRealSpace(np.array([0,0,i+1]), resolution, offset)[2]) for i in range(dose.shape[2])]
+            IndicesToCalculate = np.mgrid[db[0][0]:db[0][1] + 1, db[1][0]:db[1][1] + 1, db[2][0]:db[2][1] + 1]
+            IndicesToCalculate = np.rollaxis(IndicesToCalculate, 0, 4)
+            subct = mat["patient"]["CT"][db[0][0]-1:db[0][1], db[1][0]-1:db[1][1], db[2][0]-1:db[2][1]]
+            mask = subct > -1024
+            dose = np.zeros_like(subct)
+            dose[mask] = griddata(SampledIndices, SampledDoses, IndicesToCalculate[mask])
+            doseds.PixelData = np.swapaxes(dose, 2, 0).flatten().tobytes()
 
             doseds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtdose.dcm', write_like_original = False)
-            
+            beamnrs = [beaminfo["BeamNumber"] for beaminfo in currentbeamlist]
+            if args.DoseBeamNumber is None:
+                args.DoseBeamNumber = beamnrs
             for beamNumber in args.DoseBeamNumber:
-                print('Working on rtplan, Beam:'+str(beamNumber)+'...')
+                if not beamNumber in beamnrs:
+                    print('Wrong beam number', beamNumber)
+                    continue
+                print('Working on beam rtdose, Beam:'+str(beamNumber)+'...')
                 bdoseds = copy.deepcopy(doseds)
                 bdoseds.SOPInstanceUID = pydicom.uid.generate_uid()
+                bdoseds.SeriesInstanceUID = pydicom.uid.generate_uid()
+                bdoseds.SeriesDescription = "solutionX Beam" + str(beamNumber)
                 bdoseds.DoseSummationType = "BEAM"
-                idxStart = currentbeamlist[beamNumber - 1]["FileIndexStart"]
-                idxEnd = currentbeamlist[beamNumber - 1]["FileIndexEnd"]
+                assert(len(bdoseds.ReferencedRTPlanSequence) == 1)
+                bdoseds.ReferencedRTPlanSequence[0].ReferencedFractionGroupSequence = Sequence()
+                rfgs = Dataset()
+                rfgs.ReferencedBeamSequence = Sequence()
+                rfgs.ReferencedBeamSequence.append(Dataset())
+                rfgs.ReferencedBeamSequence[0].ReferencedBeamNumber = beamNumber
+                rfgs.ReferencedFractionGroupNumber = 1
+                bdoseds.ReferencedRTPlanSequence[0].ReferencedFractionGroupSequence.append(rfgs)
                 
-                SampledPoints = [np.array([[DoseEdges[0,0], DoseEdges[0,1],DoseEdges[0,2]]]),
-                             np.array([[DoseEdges[1,0], DoseEdges[0,1],DoseEdges[0,2]]]),
-                             np.array([[DoseEdges[1,0], DoseEdges[1,1],DoseEdges[0,2]]]),
-                             np.array([[DoseEdges[1,0], DoseEdges[1,1],DoseEdges[1,2]]]),
-                             np.array([[DoseEdges[0,0], DoseEdges[0,1],DoseEdges[1,2]]]),
-                             np.array([[DoseEdges[0,0], DoseEdges[1,1],DoseEdges[1,2]]]),
-                             np.array([[DoseEdges[0,0], DoseEdges[1,1],DoseEdges[0,2]]]),
-                             np.array([[DoseEdges[1,0], DoseEdges[0,1],DoseEdges[1,2]]])]
-                SampledDoses = [0.0 for i in range(len(SampledPoints))]
+                idxStart = currentbeamlist[beamnrs.index(beamNumber)]["FileIndexStart"]
+                idxEnd = currentbeamlist[beamnrs.index(beamNumber)]["FileIndexEnd"]
+                SampledIndices = [np.array([[db[0,0], db[1,0], db[2,0]]]),
+                                  np.array([[db[0,1], db[1,0], db[2,0]]]),
+                                  np.array([[db[0,1], db[1,1], db[2,0]]]),
+                                  np.array([[db[0,0], db[1,1], db[2,0]]]),
+                                  np.array([[db[0,0], db[1,0], db[2,1]]]),
+                                  np.array([[db[0,1], db[1,1], db[2,1]]]),
+                                  np.array([[db[0,1], db[1,0], db[2,1]]]),
+                                  np.array([[db[0,0], db[1,1], db[2,1]]])]
+                SampledDoses = [0.0 for i in range(len(SampledIndices))]
                 for matrix in mat["data"]["matrix"]:
                     if((matrix["A"].shape[0] > 1) and (np.any(matrix["A"].nonzero()[0]<0)==False)):
                         if(matrix["Name"] in mat["patient"]["StructureNames"]):
@@ -762,103 +765,120 @@ for folder in caseFolders:
                         else:
                             raise ValueError("")
 
-                        SampledPoints.append(ConvertCTIndexToRealSpace(mat["patient"]["SampledVoxels"][structIdx].T, resolution, offset))
+                        SampledIndices.extend(mat["patient"]["SampledVoxels"][structIdx].T)
                         SampledDoses.extend(SampledDosePart)
-                SampledPoints = np.vstack(SampledPoints)
+                SampledIndices = np.vstack(SampledIndices)
                 SampledDoses = np.array(SampledDoses)
-                dose = np.zeros_like(mat["patient"]["CT"])
-                dose[mask==1] = griddata(SampledPoints, SampledDoses, PointsToCalculate, method="linear")
-                bdoseds.PixelData = np.moveaxis(np.moveaxis(dose, 2, 0), 2, 1).flatten().tobytes()
 
-                bdoseds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtdose_'+str(beamNumber)+'.dcm', write_like_original = False)
-            
+                dose = np.zeros_like(subct)
+                dose[mask] = griddata(SampledIndices, SampledDoses, IndicesToCalculate[mask])
+                bdoseds.PixelData = np.swapaxes(dose, 2, 0).flatten().tobytes()
+
+                bdoseds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtdose_beam'+str(beamNumber)+'.dcm', write_like_original = False)
+
             for controlPointNumber in args.DoseControlPoints:
-                print('Working on rtplan, Beam:'+str(controlPointNumber[0])+' ControlPoint:'+str(controlPointNumber[1])+'...')
+                print('Working on rtdose, Beam:'+str(controlPointNumber[0])+' ControlPoint:'+str(controlPointNumber[1])+'...')
                 cpdoseds = copy.deepcopy(doseds)
                 cpdoseds.SOPInstanceUID = pydicom.uid.generate_uid()
+                cpdoseds.SeriesInstanceUID = pydicom.uid.generate_uid()
+                cpdoseds.SeriesDescription = "solutionX Beam" + str(controlPointNumber[0]) + " CP" + str(controlPointNumber[1])
                 cpdoseds.DoseSummationType = "CONTROL_POINT"
                 if(int(controlPointNumber[1]) % 2 == 0):
-                    print("NOTE: this control point contains no dose")
-                    dose = np.zeros_like(mat["patient"]["CT"])
-                else:
-                    idxStart = currentbeamlist[controlPointNumber[0]-1]["ControlPoints"][int((controlPointNumber[1]-1)/2)]["FileIndexStart"]
-                    idxEnd = currentbeamlist[controlPointNumber[0]-1]["ControlPoints"][int((controlPointNumber[1]-1)/2)]["FileIndexEnd"]
+                    print("NOTE: this control point contains no dose, so skipping")
+                    continue
+                idxStart = currentbeamlist[controlPointNumber[0]-1]["ControlPoints"][int((controlPointNumber[1]-1)/2)]["FileIndexStart"]
+                idxEnd = currentbeamlist[controlPointNumber[0]-1]["ControlPoints"][int((controlPointNumber[1]-1)/2)]["FileIndexEnd"]
+                
+                assert(len(cpdoseds.ReferencedRTPlanSequence) == 1)
+                cpdoseds.ReferencedRTPlanSequence[0].ReferencedFractionGroupSequence = Sequence()
+                rfgs = Dataset()
+                rfgs.ReferencedBeamSequence = Sequence()
+                rfgs.ReferencedBeamSequence.append(Dataset())
+                rfgs.ReferencedBeamSequence[0].ReferencedBeamNumber = controlPointNumber[0]
+                rfgs.ReferencedFractionGroupNumber = 1
+                cpdoseds.ReferencedRTPlanSequence[0].ReferencedFractionGroupSequence.append(rfgs)
 
-                    SampledPoints = [np.array([[DoseEdges[0,0], DoseEdges[0,1],DoseEdges[0,2]]]),
-                                 np.array([[DoseEdges[1,0], DoseEdges[0,1],DoseEdges[0,2]]]),
-                                 np.array([[DoseEdges[1,0], DoseEdges[1,1],DoseEdges[0,2]]]),
-                                 np.array([[DoseEdges[1,0], DoseEdges[1,1],DoseEdges[1,2]]]),
-                                 np.array([[DoseEdges[0,0], DoseEdges[0,1],DoseEdges[1,2]]]),
-                                 np.array([[DoseEdges[0,0], DoseEdges[1,1],DoseEdges[1,2]]]),
-                                 np.array([[DoseEdges[0,0], DoseEdges[1,1],DoseEdges[0,2]]]),
-                                 np.array([[DoseEdges[1,0], DoseEdges[0,1],DoseEdges[1,2]]])]
-                    SampledDoses = [0.0 for i in range(len(SampledPoints))]
-                    for matrix in mat["data"]["matrix"]:
-                        if((matrix["A"].shape[0] > 1) and (np.any(matrix["A"].nonzero()[0]<0)==False)):
-                            if(matrix["Name"] in mat["patient"]["StructureNames"]):
-                                structIdx = mat["patient"]["StructureNames"].index(matrix["Name"])
-                            else:
-                                continue
-                                
-                            if(matrix["A"].shape[0]==mat["patient"]["SampledVoxels"][structIdx].shape[1]):
-                                SampledDosePart = matrix["A"][:,idxStart:idxEnd]*mat["solutionX"][idxStart:idxEnd] + matrix["b"]
-                            elif (((matrix["A"].shape[0] % 9)==0) and (matrix["A"].shape[0]/9==mat["patient"]["SampledVoxels"][structIdx].shape[1])):
-                                SampledDosePart = matrix["A"][:int(matrix["A"].shape[0]/9)][:,idxStart:idxEnd]*mat["solutionX"][idxStart:idxEnd] + matrix["b"]
-                            else:
-                                raise ValueError("")
+                SampledIndices = [np.array([[db[0,0], db[1,0], db[2,0]]]),
+                                  np.array([[db[0,1], db[1,0], db[2,0]]]),
+                                  np.array([[db[0,1], db[1,1], db[2,0]]]),
+                                  np.array([[db[0,0], db[1,1], db[2,0]]]),
+                                  np.array([[db[0,0], db[1,0], db[2,1]]]),
+                                  np.array([[db[0,1], db[1,1], db[2,1]]]),
+                                  np.array([[db[0,1], db[1,0], db[2,1]]]),
+                                  np.array([[db[0,0], db[1,1], db[2,1]]])]
+                SampledDoses = [0.0 for i in range(len(SampledIndices))]
+                for matrix in mat["data"]["matrix"]:
+                    if((matrix["A"].shape[0] > 1) and (np.any(matrix["A"].nonzero()[0]<0)==False)):
+                        if(matrix["Name"] in mat["patient"]["StructureNames"]):
+                            structIdx = mat["patient"]["StructureNames"].index(matrix["Name"])
+                        else:
+                            continue
 
-                            SampledPoints.append(ConvertCTIndexToRealSpace(mat["patient"]["SampledVoxels"][structIdx].T, resolution, offset))
-                            SampledDoses.extend(SampledDosePart)
-                    SampledPoints = np.vstack(SampledPoints)
-                    SampledDoses = np.array(SampledDoses)
-                    dose = np.zeros_like(mat["patient"]["CT"])
-                    dose[mask==1] = griddata(SampledPoints, SampledDoses, PointsToCalculate, method="linear")
-                    cpdoseds.PixelData = np.moveaxis(np.moveaxis(dose, 2, 0), 2, 1).flatten().tobytes()
+                        if(matrix["A"].shape[0]==mat["patient"]["SampledVoxels"][structIdx].shape[1]):
+                            SampledDosePart = matrix["A"][:,idxStart:idxEnd]*mat["solutionX"][idxStart:idxEnd] + matrix["b"]
+                        elif (((matrix["A"].shape[0] % 9)==0) and (matrix["A"].shape[0]/9==mat["patient"]["SampledVoxels"][structIdx].shape[1])):
+                            SampledDosePart = matrix["A"][:int(matrix["A"].shape[0]/9)][:,idxStart:idxEnd]*mat["solutionX"][idxStart:idxEnd] + matrix["b"]
+                        else:
+                            raise ValueError("")
 
-                cpdoseds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtdose_'+str(controlPointNumber[0])+'_'+str(controlPointNumber[1])+'.dcm', write_like_original = False)
+                        SampledIndices.extend(mat["patient"]["SampledVoxels"][structIdx].T)
+                        SampledDoses.extend(SampledDosePart)
+                SampledIndices = np.vstack(SampledIndices)
+                SampledDoses = np.array(SampledDoses)
+                
+                dose = np.zeros_like(subct)
+                dose[mask] = griddata(SampledIndices, SampledDoses, IndicesToCalculate[mask])
+                cpdoseds.PixelData = np.swapaxes(dose, 2, 0).flatten().tobytes()
+
+                cpdoseds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtdose_beam'+str(controlPointNumber[0])+'_CP'+str(controlPointNumber[1])+'.dcm', write_like_original = False)
 
         for beamSpotNumber in args.DoseBeamSpots:
-                print('Working on rtplan, Beam:'+str(beamSpotNumber[0])+' ControlPoint:'+str(beamSpotNumber[1])+' BeamSpot:'+str(beamSpotNumber[2])+'...')
+                print('Working on rtdose, Beam:'+str(beamSpotNumber[0])+' ControlPoint:'+str(beamSpotNumber[1])+' BeamSpot:'+str(beamSpotNumber[2])+'...')               
+                
                 bsdoseds = copy.deepcopy(doseds)
                 bsdoseds.SOPInstanceUID = pydicom.uid.generate_uid()
+                bsdoseds.SeriesInstanceUID = pydicom.uid.generate_uid()
+                bsdoseds.SeriesDescription = "solutionX Beam" + str(beamSpotNumber[0]) + " CP" + str(beamSpotNumber[1]) + " SP" + str(beamSpotNumber[2])
                 bsdoseds.DoseSummationType = "CONTROL_POINT"
+                
                 if(int(beamSpotNumber[1]) % 2 == 0):
-                    print("NOTE: this control point contains no dose")
-                    dose = np.zeros_like(mat["patient"]["CT"])
-                else:
-                    idx = currentbeamlist[beamSpotNumber[0]-1]["ControlPoints"][int((beamSpotNumber[1]-1)/2)]["FileIndexStart"] + beamSpotNumber[2] - 1
+                    print("NOTE: this control point contains no dose, so skipping.")
+                    continue
+                
+                idx = currentbeamlist[beamSpotNumber[0]-1]["ControlPoints"][int((beamSpotNumber[1]-1)/2)]["FileIndexStart"] + beamSpotNumber[2] - 1
 
-                    SampledPoints = [np.array([[DoseEdges[0,0], DoseEdges[0,1],DoseEdges[0,2]]]),
-                                 np.array([[DoseEdges[1,0], DoseEdges[0,1],DoseEdges[0,2]]]),
-                                 np.array([[DoseEdges[1,0], DoseEdges[1,1],DoseEdges[0,2]]]),
-                                 np.array([[DoseEdges[1,0], DoseEdges[1,1],DoseEdges[1,2]]]),
-                                 np.array([[DoseEdges[0,0], DoseEdges[0,1],DoseEdges[1,2]]]),
-                                 np.array([[DoseEdges[0,0], DoseEdges[1,1],DoseEdges[1,2]]]),
-                                 np.array([[DoseEdges[0,0], DoseEdges[1,1],DoseEdges[0,2]]]),
-                                 np.array([[DoseEdges[1,0], DoseEdges[0,1],DoseEdges[1,2]]])]
-                    SampledDoses = [0.0 for i in range(len(SampledPoints))]
-                    for matrix in mat["data"]["matrix"]:
-                        if((matrix["A"].shape[0] > 1) and (np.any(matrix["A"].nonzero()[0]<0)==False)):
-                            if(matrix["Name"] in mat["patient"]["StructureNames"]):
-                                structIdx = mat["patient"]["StructureNames"].index(matrix["Name"])
-                            else:
-                                continue
+                SampledIndices = [np.array([[db[0,0], db[1,0], db[2,0]]]),
+                                  np.array([[db[0,1], db[1,0], db[2,0]]]),
+                                  np.array([[db[0,1], db[1,1], db[2,0]]]),
+                                  np.array([[db[0,0], db[1,1], db[2,0]]]),
+                                  np.array([[db[0,0], db[1,0], db[2,1]]]),
+                                  np.array([[db[0,1], db[1,1], db[2,1]]]),
+                                  np.array([[db[0,1], db[1,0], db[2,1]]]),
+                                  np.array([[db[0,0], db[1,1], db[2,1]]])]
+                SampledDoses = [0.0 for i in range(len(SampledIndices))]
+                for matrix in mat["data"]["matrix"]:
+                    if((matrix["A"].shape[0] > 1) and (np.any(matrix["A"].nonzero()[0]<0)==False)):
+                        if(matrix["Name"] in mat["patient"]["StructureNames"]):
+                            structIdx = mat["patient"]["StructureNames"].index(matrix["Name"])
+                        else:
+                            continue
 
-                            if(matrix["A"].shape[0]==mat["patient"]["SampledVoxels"][structIdx].shape[1]):
-                                SampledDosePart = matrix["A"][:,idx]*mat["solutionX"][idx] + matrix["b"]
-                            elif (((matrix["A"].shape[0] % 9)==0) and (matrix["A"].shape[0]/9==mat["patient"]["SampledVoxels"][structIdx].shape[1])):
-                                SampledDosePart = matrix["A"][:int(matrix["A"].shape[0]/9)][:,idx]*mat["solutionX"][idx] + matrix["b"]
-                            else:
-                                raise ValueError("")
+                        if(matrix["A"].shape[0]==mat["patient"]["SampledVoxels"][structIdx].shape[1]):
+                            SampledDosePart = matrix["A"][:,idx]*mat["solutionX"][idx] + matrix["b"]
+                        elif (((matrix["A"].shape[0] % 9)==0) and (matrix["A"].shape[0]/9==mat["patient"]["SampledVoxels"][structIdx].shape[1])):
+                            SampledDosePart = matrix["A"][:int(matrix["A"].shape[0]/9)][:,idx]*mat["solutionX"][idx] + matrix["b"]
+                        else:
+                            raise ValueError("")
 
-                            SampledPoints.append(ConvertCTIndexToRealSpace(mat["patient"]["SampledVoxels"][structIdx].T, resolution, offset))
-                            SampledDoses.extend(SampledDosePart)
-                    SampledPoints = np.vstack(SampledPoints)
-                    SampledDoses = np.array(SampledDoses)
-                    dose = np.zeros_like(mat["patient"]["CT"])
-                    dose[mask==1] = griddata(SampledPoints, SampledDoses, PointsToCalculate, method="linear")
-                    bsdoseds.PixelData = np.moveaxis(np.moveaxis(dose, 2, 0), 2, 1).flatten().tobytes()
+                        SampledIndices.extend(mat["patient"]["SampledVoxels"][structIdx].T)
+                        SampledDoses.extend(SampledDosePart)
+                SampledIndices = np.vstack(SampledIndices)
+                SampledDoses = np.array(SampledDoses)
+                
+                dose = np.zeros_like(subct)
+                dose[mask] = griddata(SampledIndices, SampledDoses, IndicesToCalculate[mask])
+                bsdoseds.PixelData = np.swapaxes(dose, 2, 0).flatten().tobytes()
+                
+                bsdoseds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtdose_beam'+str(beamSpotNumber[0])+'_CP'+str(beamSpotNumber[1])+'_SP'+str(beamSpotNumber[2])+'.dcm', write_like_original = False)
 
-                bsdoseds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtdose_'+str(beamSpotNumber[0])+'_'+str(beamSpotNumber[1])+'_'+str(beamSpotNumber[2])+'.dcm', write_like_original = False)
-        
         print('DICOM files writen to ' + args.outputPath + "/DICOMs/"+patientFolder)
