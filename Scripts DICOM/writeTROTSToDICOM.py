@@ -718,6 +718,7 @@ for folder in caseFolders:
             doseds.PixelData = np.swapaxes(dose, 2, 0).flatten().tobytes()
 
             doseds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtdose.dcm', write_like_original = False)
+            
             beamnrs = [beaminfo["BeamNumber"] for beaminfo in currentbeamlist]
             if args.DoseBeamNumber is None:
                 args.DoseBeamNumber = beamnrs
@@ -795,6 +796,12 @@ for folder in caseFolders:
                 rfgs.ReferencedBeamSequence = Sequence()
                 rfgs.ReferencedBeamSequence.append(Dataset())
                 rfgs.ReferencedBeamSequence[0].ReferencedBeamNumber = controlPointNumber[0]
+                rcps = Sequence()
+                rcpp = Dataset()
+                rcpp.ReferencedStartControlPointIndex = controlPointNumber[1]
+                rcpp.ReferencedStopControlPointIndex = controlPointNumber[1]
+                rcps.append(rcpp)
+                rfgs.ReferencedBeamSequence[0].ReferencedControlPointSequence = rcps
                 rfgs.ReferencedFractionGroupNumber = 1
                 cpdoseds.ReferencedRTPlanSequence[0].ReferencedFractionGroupSequence.append(rfgs)
 
@@ -840,6 +847,20 @@ for folder in caseFolders:
                 bsdoseds.SeriesInstanceUID = pydicom.uid.generate_uid()
                 bsdoseds.SeriesDescription = "solutionX Beam" + str(beamSpotNumber[0]) + " CP" + str(beamSpotNumber[1]) + " SP" + str(beamSpotNumber[2])
                 bsdoseds.DoseSummationType = "CONTROL_POINT"
+                assert(len(bsdoseds.ReferencedRTPlanSequence) == 1)
+                bsdoseds.ReferencedRTPlanSequence[0].ReferencedFractionGroupSequence = Sequence()
+                rfgs = Dataset()
+                rfgs.ReferencedBeamSequence = Sequence()
+                rfgs.ReferencedBeamSequence.append(Dataset())
+                rfgs.ReferencedBeamSequence[0].ReferencedBeamNumber = beamSpotNumber[0]
+                rcps = Sequence()
+                rcpp = Dataset()
+                rcpp.ReferencedStartControlPointIndex = beamSpotNumber[1]
+                rcpp.ReferencedStopControlPointIndex = beamSpotNumber[1]
+                rcps.append(rcpp)
+                rfgs.ReferencedBeamSequence[0].ReferencedControlPointSequence = rcps
+                rfgs.ReferencedFractionGroupNumber = 1
+                bsdoseds.ReferencedRTPlanSequence[0].ReferencedFractionGroupSequence.append(rfgs)
                 
                 if(int(beamSpotNumber[1]) % 2 == 0):
                     print("NOTE: this control point contains no dose, so skipping.")
