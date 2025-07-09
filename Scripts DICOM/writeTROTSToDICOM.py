@@ -405,6 +405,16 @@ for folder in caseFolders:
                 if(key not in probleminfo):
                     constraint = {}
                     constraint["Name"] = mat["problem"]["Name"][index]
+                    if("mean" in constraint["Name"].lower()):
+                        constraint["IsMean"] = True
+                        constraint["IsRobust"] = False
+                    else:
+                        constraint["IsMean"] = False
+                        structIdx = mat["patient"]["StructureNames"].index(mat["problem"]["Name"][index])
+                        for matrixIdx in range(len(mat["data"]["matrix"])):
+                            if(mat["data"]["matrix"][matrixIdx]["Name"] == mat["problem"]["Name"][index]):
+                                break
+                        constraint["IsRobust"] = mat["data"]["matrix"][matrixIdx]["A"].shape[0]/9==mat["patient"]["SampledVoxels"][structIdx].shape[1]
                     if (("gtv" in constraint["Name"].lower()) or ("ptv" in constraint["Name"].lower()) or ("ctv" in constraint["Name"].lower())):
                         constraint["type"] = "TARGET"
                         
@@ -441,7 +451,12 @@ for folder in caseFolders:
                 doseReference.DoseReferenceNumber = dosenumber + 1
                 doseReference.DoseReferenceUID = pydicom.uid.generate_uid()
                 doseReference.DoseReferenceStructureType = "VOLUME"
-                doseReference.DoseReferenceDescription = probleminfo[key]["Name"] + (" Constraint" if(key[2]) else " Objective")
+                if(probleminfo[key]["IsMean"]):
+                    doseReference.DoseReferenceDescription = probleminfo[key]["Name"] + (" Constraint" if(key[2]) else " Objective") + ", WARNING: mean dose"
+                elif(probleminfo[key]["IsRobust"]):
+                    doseReference.DoseReferenceDescription = probleminfo[key]["Name"] + (" Constraint" if(key[2]) else " Objective") + ", WARNING: planned robust"
+                else:
+                    doseReference.DoseReferenceDescription = probleminfo[key]["Name"] + (" Constraint" if(key[2]) else " Objective")
                 doseReference.DoseReferenceType = probleminfo[key]["type"]
                 doseReference.ConstraintWeight = format_number_as_ds(float(key[1]))
                 if(probleminfo[key]["type"] == "TARGET"):
