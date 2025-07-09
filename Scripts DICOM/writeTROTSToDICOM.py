@@ -733,6 +733,7 @@ for folder in caseFolders:
             for beamNumber in args.DoseBeamNumber:
                 print('Working on rtplan, Beam:'+str(beamNumber)+'...')
                 bdoseds = copy.deepcopy(doseds)
+                bdoseds.SOPInstanceUID = pydicom.uid.generate_uid()
                 bdoseds.DoseSummationType = "BEAM"
                 idxStart = currentbeamlist[beamNumber - 1]["FileIndexStart"]
                 idxEnd = currentbeamlist[beamNumber - 1]["FileIndexEnd"]
@@ -773,6 +774,7 @@ for folder in caseFolders:
             for controlPointNumber in args.DoseControlPoints:
                 print('Working on rtplan, Beam:'+str(controlPointNumber[0])+' ControlPoint:'+str(controlPointNumber[1])+'...')
                 cpdoseds = copy.deepcopy(doseds)
+                cpdoseds.SOPInstanceUID = pydicom.uid.generate_uid()
                 cpdoseds.DoseSummationType = "CONTROL_POINT"
                 if(int(controlPointNumber[1]) % 2 == 0):
                     print("NOTE: this control point contains no dose")
@@ -817,6 +819,7 @@ for folder in caseFolders:
         for beamSpotNumber in args.DoseBeamSpots:
                 print('Working on rtplan, Beam:'+str(beamSpotNumber[0])+' ControlPoint:'+str(beamSpotNumber[1])+' BeamSpot:'+str(beamSpotNumber[2])+'...')
                 bsdoseds = copy.deepcopy(doseds)
+                bsdoseds.SOPInstanceUID = pydicom.uid.generate_uid()
                 bsdoseds.DoseSummationType = "CONTROL_POINT"
                 if(int(beamSpotNumber[1]) % 2 == 0):
                     print("NOTE: this control point contains no dose")
