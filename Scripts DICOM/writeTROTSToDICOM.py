@@ -666,6 +666,7 @@ for folder in caseFolders:
             doseds.DoseType = "PHYSICAL"
             doseds.DoseSummationType = "PLAN"
             doseds.DoseGridScaling = 1
+            doseds.PositionReferenceIndicator = ds.PositionReferenceIndicator
             
             doseds.ReferencedRTPlanSequence = Sequence()
             seqrt = Dataset()
