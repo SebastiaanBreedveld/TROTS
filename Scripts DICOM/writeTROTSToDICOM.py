@@ -432,11 +432,11 @@ for folder in caseFolders:
                     if (("gtv" in key[0].lower()) or ("ptv" in key[0].lower()) or ("ctv" in key[0].lower())):
                         constraint["type"] = "TARGET"
                         if(mat["problem"]["Minimise"][index]==1):
-                            constraint["Min"] = mat["problem"]["Objective"][index]
-                            constraint["Max"] = ""
-                        else:
-                            constraint["Min"] = ""
                             constraint["Max"] = mat["problem"]["Objective"][index]
+                            constraint["Min"] = ""
+                        else:
+                            constraint["Max"] = ""
+                            constraint["Min"] = mat["problem"]["Objective"][index]
                     else:
                         # If it isn't a TARGET it must be a ORGAN_AT_RISK
                         constraint["type"] = "ORGAN_AT_RISK"
@@ -448,7 +448,7 @@ for folder in caseFolders:
                     # Only TARGET can have both upper and lower bound
                     assert(probleminfo[key]["type"]=="TARGET") # having upper and lower only make sense for target
                     # Only one upper and one lower can be defined for one key in a TARGET
-                    if(mat["problem"]["Minimise"]==1):
+                    if(mat["problem"]["Minimise"][index]==1):
                         assert(probleminfo[key]["Max"]=="")
                         probleminfo[key]["Max"] = mat["problem"]["Objective"][index]
                     else:
