@@ -153,7 +153,7 @@ for folder in caseFolders:
 
             ds.PixelData = np.array(np.swapaxes(mat['patient']['CT'][:,:,sliceIndex],0,1)+1024).tobytes()
 
-            ds.save_as(outFolder+'CT'+str(sliceIndex).zfill(3)+".dcm", write_like_original = False)
+            ds.save_as(outFolder+'CT_'+str(sliceIndex).zfill(3)+".dcm", write_like_original = False)
 
         # write RTStruct
         meta = pydicom.Dataset()
