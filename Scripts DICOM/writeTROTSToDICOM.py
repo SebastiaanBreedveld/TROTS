@@ -433,13 +433,14 @@ for folder in caseFolders:
                     continue
 
                 # If two rows have the same key they are merged one being the upper and other being the lower bound
-                key = (float(mat["problem"]["dataID"][index]),float(mat["problem"]["Weight"][index]),bool(mat["problem"]["IsConstraint"][index]))
+                key = (int(mat["problem"]["dataID"][index]),float(mat["problem"]["Weight"][index]),bool(mat["problem"]["IsConstraint"][index]))
 
                 roiName = mat['problem']['Name'][index]
                 matrixIdx = int(mat['problem']['dataID'][index])-1
                 dataName = mat['data']['matrix'][matrixIdx]["Name"]
                 structIdx = mat["patient"]["StructureNames"].index(roiName)
                 isRobust = int(mat["data"]["matrix"][matrixIdx]["A"].shape[0]%9 == 0 and int(mat["data"]["matrix"][matrixIdx]["A"].shape[0]/9==mat["patient"]["SampledVoxels"][structIdx].shape[1]))
+                # print(roiName, dataName, isRobust, mat["problem"]["IsConstraint"][index])
                 if mat["problem"]["IsConstraint"][index] == 0:
                     if mat["problem"]["Objective"][index] != mat["problem"]["Sufficient"][index]:
                         print('Warning: sufficient objective',mat["problem"]["Sufficient"][index],'was specified but will not be honored for',dataName)
@@ -474,8 +475,11 @@ for folder in caseFolders:
                     assert(probleminfo[key]["type"]=="TARGET") # having upper and lower only make sense for target
                     # Only one upper and one lower can be defined for one key in a TARGET
                     if(mat["problem"]["Minimise"][index]==1):
-                        assert(probleminfo[key]["Max"]=="")
-                        probleminfo[key]["Max"] = mat["problem"]["Objective"][index]
+                        if (probleminfo[key]["Max"]!=""):
+                            print('Warning, found a duplicate max constraint,',dataName,'taking the minimum') # happens for Protons16.mat
+                            probleminfo[key]["Max"] = min(mat["problem"]["Objective"][index], probleminfo[key]["Max"])
+                        else:
+                            probleminfo[key]["Max"] = mat["problem"]["Objective"][index]
                     else:
                         assert(probleminfo[key]["Min"]=="")
                         probleminfo[key]["Min"] = mat["problem"]["Objective"][index]
