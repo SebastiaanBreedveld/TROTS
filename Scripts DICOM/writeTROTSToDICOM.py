@@ -397,7 +397,8 @@ for folder in caseFolders:
 
             probleminfo = {}
             for index in range(len(mat["problem"]["Name"])): #all elements of mat["problem"] are the same length
-                # All problem info is grouped accordinding to the unique key = (Structure name, weight, is constraint)
+                # All problem info is grouped accordinding to the unique key = (dataID, weight, is constraint)
+
                 # If two rows have the same key they are merged one being the upper and other being the lower bound
                 key = (float(mat["problem"]["dataID"][index]),float(mat["problem"]["Weight"][index]),bool(mat["problem"]["IsConstraint"][index]))
                 if(mat["problem"]["Name"][index].lower()=="mu"):
