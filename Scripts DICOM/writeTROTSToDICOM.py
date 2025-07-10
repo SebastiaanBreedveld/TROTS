@@ -418,15 +418,28 @@ for folder in caseFolders:
 
             probleminfo = {}
             for index in range(len(mat["problem"]["Name"])): #all elements of mat["problem"] are the same length
-                # All problem info is grouped accordinding to the unique key = (Structure name, weight, is constraint)
+                # All problem info is grouped accordinding to the unique key = (dataID, weight, is constraint)
+
                 # If two rows have the same key they are merged one being the upper and other being the lower bound
-                key = (mat["problem"]["Name"][index],float(mat["problem"]["Weight"][index]),bool(mat["problem"]["IsConstraint"][index]))
-                if(key[0].lower()=="mu"):
+                key = (float(mat["problem"]["dataID"][index]),float(mat["problem"]["Weight"][index]),bool(mat["problem"]["IsConstraint"][index]))
+                if(mat["problem"]["Name"][index].lower()=="mu"):
                     continue
                 if(key not in probleminfo):
                     constraint = {}
-                    if (("gtv" in key[0].lower()) or ("ptv" in key[0].lower()) or ("ctv" in key[0].lower())):
+                    constraint["Name"] = mat["problem"]["Name"][index]
+                    if("mean" in constraint["Name"].lower()):
+                        constraint["IsMean"] = True
+                        constraint["IsRobust"] = False
+                    else:
+                        constraint["IsMean"] = False
+                        structIdx = mat["patient"]["StructureNames"].index(mat["problem"]["Name"][index])
+                        for matrixIdx in range(len(mat["data"]["matrix"])):
+                            if(mat["data"]["matrix"][matrixIdx]["Name"] == mat["problem"]["Name"][index]):
+                                break
+                        constraint["IsRobust"] = mat["data"]["matrix"][matrixIdx]["A"].shape[0]/9==mat["patient"]["SampledVoxels"][structIdx].shape[1]
+                    if (("gtv" in constraint["Name"].lower()) or ("ptv" in constraint["Name"].lower()) or ("ctv" in constraint["Name"].lower())):
                         constraint["type"] = "TARGET"
+                        
                         if(mat["problem"]["Minimise"][index]==1):
                             constraint["Max"] = mat["problem"]["Objective"][index]
                             constraint["Min"] = ""
@@ -441,6 +454,8 @@ for folder in caseFolders:
                         constraint["Max"] = mat["problem"]["Objective"][index]
                     probleminfo[key] = constraint
                 else:
+                    # The constraints must correspond to the same structure
+                    assert(probleminfo[key]["Name"] == mat["problem"]["Name"][index])
                     # Only TARGET can have both upper and lower bound
                     assert(probleminfo[key]["type"]=="TARGET") # having upper and lower only make sense for target
                     # Only one upper and one lower can be defined for one key in a TARGET
@@ -454,11 +469,15 @@ for folder in caseFolders:
             rtds.DoseReferenceSequence = Sequence()
             for dosenumber,key in enumerate(probleminfo):
                 doseReference = Dataset()
-                doseReference.ReferencedROINumber = structToROINumber[key[0]]
+                doseReference.ReferencedROINumber = structToROINumber[probleminfo[key]["Name"]]
                 doseReference.DoseReferenceNumber = dosenumber + 1
                 doseReference.DoseReferenceUID = pydicom.uid.generate_uid()
                 doseReference.DoseReferenceStructureType = "VOLUME"
-                doseReference.DoseReferenceDescription = key[0] + (" Constraint" if(key[2]) else " Objective")
+                doseReference.DoseReferenceDescription = probleminfo[key]["Name"] + (" Constraint" if(key[2]) else " Objective")
+                if(probleminfo[key]["IsMean"]):
+                    doseReference.DoseReferenceDescription += " (mean)"
+                if(probleminfo[key]["IsRobust"]):
+                    doseReference.DoseReferenceDescription += " (robust)"
                 doseReference.DoseReferenceType = probleminfo[key]["type"]
                 doseReference.ConstraintWeight = format_number_as_ds(float(key[1]))
                 if(probleminfo[key]["type"] == "TARGET"):
