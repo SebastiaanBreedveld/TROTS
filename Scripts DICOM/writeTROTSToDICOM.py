@@ -342,6 +342,7 @@ for folder in caseFolders:
             rtds.RTPlanDate = ""
             rtds.RTPlanTime = ""
             rtds.RTPlanGeometry = "PATIENT"
+            rtds.ApprovalStatus = "UNAPPROVED"
 
             rtds.PatientSetupSequence = Sequence()
             patientSetup = Dataset()
@@ -583,9 +584,9 @@ for folder in caseFolders:
                     icpoi.BeamLimitingDeviceRotationDirection = 'NONE'
                     icpoi.PatientSupportAngle = mat['patient']['Beams']['BeamConfig'][beaminfo["FileBeamNumber"]-1]['Couch']
                     icpoi.PatientSupportRotationDirection = 'NONE'
-                    icpoi.TableTopVerticalPosition     = 0
-                    icpoi.TableTopLongitudinalPosition = 0
-                    icpoi.TableTopLateralPosition      = 0
+                    icpoi.TableTopVerticalPosition     = None
+                    icpoi.TableTopLongitudinalPosition = None
+                    icpoi.TableTopLateralPosition      = None
                     icpoi.IsocenterPosition = [format_number_as_ds(isp) for isp in mat["patient"]["Isocentre"].flatten()]
                     icpoi.TableTopPitchAngle = 0
                     icpoi.TableTopPitchRotationDirection = 'NONE'
@@ -646,7 +647,6 @@ for folder in caseFolders:
                     else:
                         totalMetersetWeightOfControlPoints += icpoi.ScanSpotMetersetWeights
                     be.IonControlPointSequence.append(icpoi)
-                be.PatientSetupNumber = 1
                 be.ToleranceTableNumber = 0
                 assert(abs(be.FinalCumulativeMetersetWeight - icpoi.CumulativeMetersetWeight) < MetersetWeightTolerance)
                 assert(abs(be.FinalCumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
