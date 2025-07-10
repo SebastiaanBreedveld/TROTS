@@ -12,20 +12,20 @@ import csv
 import seaborn as sns
 from scipy.interpolate import griddata
 
-pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
-
 parser = argparse.ArgumentParser()
-parser.add_argument("--Manufacturer", nargs='?', help="The name of the manufacturer to be safed in the DICOMs", default="")
-parser.add_argument("--ManufacturerModelName", nargs='?', help="The name of the manufacturer model to be safed in the DICOMs", default="")
-parser.add_argument("--InstitutionName", nargs='?', help="The name of the Institution to be safed in the DICOMs", default="")
-parser.add_argument("--ReferringPhysicianName", nargs='?', help="The name of the referring physician to be safed in the DICOMs", default="")
-parser.add_argument("--OperatorsName", nargs='?', help="The name of the operators to be safed in the DICOMs", default="")
+parser.add_argument("--Manufacturer", nargs='?', help="The name of the manufacturer to be saved in the DICOMs", default="")
+parser.add_argument("--ManufacturerModelName", nargs='?', help="The name of the manufacturer model to be saved in the DICOMs", default="")
+parser.add_argument("--InstitutionName", nargs='?', help="The name of the Institution to be saved in the DICOMs", default="")
+parser.add_argument("--ReferringPhysicianName", nargs='?', help="The name of the referring physician to be saved in the DICOMs", default="")
+parser.add_argument("--OperatorsName", nargs='?', help="The name of the operators to be saved in the DICOMs", default="")
 parser.add_argument("-b","--folderBasePath", nargs='?', help="The base directory in which the code is run containing all neccessary folders", default=".")
 parser.add_argument("-o", "--outputPath", nargs='?', help="The output directory of the DICOM file", default="/tmp")
 parser.add_argument("-n", "--DoseBeamNumber", type=list, nargs='?', help="A list of beam numbers to be calculated where a separate rtdose_<BeamNumber>.dcm is calculated, format: [BeamNumber_i, ..]. By default, all beams will be included.", default=None)
 parser.add_argument("-c", "--DoseControlPoints", type=list, nargs='?', help="A list of control point numbers where a separate rtdose_<BeamNumber>_<ControlPointNumber>.dcm is calculated, format: [(BeamNumber_i,ControlPoint_i), ...]", default=[])
 parser.add_argument("-s", "--DoseBeamSpots", type=list, nargs='?', help="A list of beam spot numbers where the rtdose_<BeamNumber>_<ControlPointNumber>_<BeamSpotNumber>.dcm is calculated, format: [(BeamNumber_i,ControlPoint_i,BeamSpotNumber_i), ...]", default=[])
 args = parser.parse_args()
+
+pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
 
 caseFolders = ['Prostate_CK', 'Head-and-Neck', 'Protons', 'Liver', 'Prostate_BT', 'Prostate_VMAT', 'Head-and-Neck-Alt']
 for folder in caseFolders:
@@ -41,7 +41,7 @@ for folder in caseFolders:
             machinedata = mat73.loadmat(args.folderBasePath+"/"+folder+'/MachineData.mat')
         except:
             print("Note: Protons folder is missing BeamList.mat and MachineData.mat, thus rtplan.dcm will not be created")
-    
+
     for matFile in matFiles:
         if((matFile!='BeamList.mat') and (matFile!='MachineData.mat')):
             mat = mat73.loadmat(args.folderBasePath+"/"+folder + '/' + matFile)
@@ -50,7 +50,8 @@ for folder in caseFolders:
         print('Folder and file:', folder, matFile)
         patientFolder = matFile.split('.')[0]
         patientIndexInt = int(patientFolder.split('_')[1])
-        os.makedirs(args.outputPath + "/DICOMs/" + patientFolder, exist_ok=True)
+        outFolder = args.outputPath + "/DICOMs/" + folder + "/" + patientFolder + "/"
+        os.makedirs(outFolder, exist_ok=True)
         resolutionX = mat['patient']['Resolution'][0];
         resolutionY = mat['patient']['Resolution'][1];
         resolutionZ = mat['patient']['Resolution'][2];
@@ -60,7 +61,7 @@ for folder in caseFolders:
         nSlicesCT = ctshape[2] # DICOM slices, goes with z
         ctsopids = {}
         # write planning objectives into csv
-        with open(args.outputPath + "/DICOMs/"+patientFolder+'/planning.csv', 'w', newline = '') as csvfile:
+        with open(outFolder+'planning.csv', 'w', newline = '') as csvfile:
             filewriter = csv.writer(csvfile)
             if folder != 'Prostate_BT':
                 filewriter.writerow(['Beam angle', 'Couch angle', 'Collimator'])
@@ -152,7 +153,7 @@ for folder in caseFolders:
 
             ds.PixelData = np.array(np.swapaxes(mat['patient']['CT'][:,:,sliceIndex],0,1)+1024).tobytes()
 
-            ds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/CTSlice'+str(sliceIndex).zfill(3)+".dcm", write_like_original = False)
+            ds.save_as(outFolder+'CT'+str(sliceIndex).zfill(3)+".dcm", write_like_original = False)
 
         # write RTStruct
         meta = pydicom.Dataset()
@@ -293,7 +294,7 @@ for folder in caseFolders:
                             rc.ContourSequence.append(cont)
             rds.ROIContourSequence.append(rc)
 
-        rds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtstruct.dcm', write_like_original = False)
+        rds.save_as(outFolder+'rtstruct.dcm', write_like_original = False)
 
         if((folder == 'Protons') and ('beamlistfolder' in locals()) and ('machinedata' in locals())):
             # write rtplan
@@ -432,7 +433,7 @@ for folder in caseFolders:
 
                 # If two rows have the same key they are merged one being the upper and other being the lower bound
                 key = (float(mat["problem"]["dataID"][index]),float(mat["problem"]["Weight"][index]),bool(mat["problem"]["IsConstraint"][index]))
-                
+
                 roiName = mat['problem']['Name'][index]
                 matrixIdx = int(mat['problem']['dataID'][index])-1
                 dataName = mat['data']['matrix'][matrixIdx]["Name"]
@@ -441,13 +442,13 @@ for folder in caseFolders:
                 if mat["problem"]["IsConstraint"][index] == 0:
                     if mat["problem"]["Objective"][index] != mat["problem"]["Sufficient"][index]:
                         print('Warning: sufficient objective',mat["problem"]["Sufficient"][index],'was specified but will not be honored for',dataName)
-                
+
                 if(key not in probleminfo):
                     constraint = {}
                     constraint["Name"] = dataName
                     constraint["roiName"] = roiName
                     constraint["IsRobust"] = isRobust
-                    
+
                     if (("gtv" in constraint["Name"].lower()) or ("ptv" in constraint["Name"].lower()) or ("ctv" in constraint["Name"].lower())):
                         constraint["type"] = "TARGET"
                         if(mat["problem"]["Minimise"][index]==1):
@@ -644,7 +645,7 @@ for folder in caseFolders:
                 rtds.IonBeamSequence.append(be)
                 totalMetersetWeightOfBeams += be.FinalCumulativeMetersetWeight
             assert(abs(totalMetersetWeightOfBeams - sum(mat["solutionX"])) < MetersetWeightTolerance)
-            rtds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtplan.dcm', write_like_original = False)
+            rtds.save_as(outFolder+'rtplan.dcm', write_like_original = False)
 
             # write rtplan
             print('Working on rtdose...')
@@ -708,7 +709,7 @@ for folder in caseFolders:
             seqrt.ReferencedSOPClassUID = rtds.SOPClassUID
             seqrt.ReferencedSOPInstanceUID = rtds.SOPInstanceUID
             doseds.ReferencedRTPlanSequence.append(seqrt)
-            
+
             SampledIndices = [np.array([[db[0,0], db[1,0], db[2,0]]]),
                               np.array([[db[0,1], db[1,0], db[2,0]]]),
                               np.array([[db[0,1], db[1,1], db[2,0]]]),
@@ -746,8 +747,8 @@ for folder in caseFolders:
             dose[mask] = griddata(SampledIndices, SampledDoses, IndicesToCalculate[mask])
             doseds.PixelData = np.swapaxes(dose, 2, 0).flatten().tobytes()
 
-            doseds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtdose.dcm', write_like_original = False)
-            
+            doseds.save_as(outFolder + 'rtdose.dcm', write_like_original = False)
+
             beamnrs = [beaminfo["BeamNumber"] for beaminfo in currentbeamlist]
             if args.DoseBeamNumber is None:
                 args.DoseBeamNumber = beamnrs
@@ -769,7 +770,7 @@ for folder in caseFolders:
                 rfgs.ReferencedBeamSequence[0].ReferencedBeamNumber = beamNumber
                 rfgs.ReferencedFractionGroupNumber = 1
                 bdoseds.ReferencedRTPlanSequence[0].ReferencedFractionGroupSequence.append(rfgs)
-                
+
                 idxStart = currentbeamlist[beamnrs.index(beamNumber)]["FileIndexStart"]
                 idxEnd = currentbeamlist[beamnrs.index(beamNumber)]["FileIndexEnd"]
                 SampledIndices = [np.array([[db[0,0], db[1,0], db[2,0]]]),
@@ -804,7 +805,7 @@ for folder in caseFolders:
                 dose[mask] = griddata(SampledIndices, SampledDoses, IndicesToCalculate[mask])
                 bdoseds.PixelData = np.swapaxes(dose, 2, 0).flatten().tobytes()
 
-                bdoseds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtdose_beam'+str(beamNumber)+'.dcm', write_like_original = False)
+                bdoseds.save_as(outFolder+'rtdose_beam'+str(beamNumber)+'.dcm', write_like_original = False)
 
             for controlPointNumber in args.DoseControlPoints:
                 print('Working on rtdose, Beam:'+str(controlPointNumber[0])+' ControlPoint:'+str(controlPointNumber[1])+'...')
@@ -818,7 +819,7 @@ for folder in caseFolders:
                     continue
                 idxStart = currentbeamlist[controlPointNumber[0]-1]["ControlPoints"][int((controlPointNumber[1]-1)/2)]["FileIndexStart"]
                 idxEnd = currentbeamlist[controlPointNumber[0]-1]["ControlPoints"][int((controlPointNumber[1]-1)/2)]["FileIndexEnd"]
-                
+
                 assert(len(cpdoseds.ReferencedRTPlanSequence) == 1)
                 cpdoseds.ReferencedRTPlanSequence[0].ReferencedFractionGroupSequence = Sequence()
                 rfgs = Dataset()
@@ -861,16 +862,16 @@ for folder in caseFolders:
                         SampledDoses.extend(SampledDosePart)
                 SampledIndices = np.vstack(SampledIndices)
                 SampledDoses = np.array(SampledDoses)
-                
+
                 dose = np.zeros_like(subct)
                 dose[mask] = griddata(SampledIndices, SampledDoses, IndicesToCalculate[mask])
                 cpdoseds.PixelData = np.swapaxes(dose, 2, 0).flatten().tobytes()
 
-                cpdoseds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtdose_beam'+str(controlPointNumber[0])+'_CP'+str(controlPointNumber[1])+'.dcm', write_like_original = False)
+                cpdoseds.save_as(outFolder+'rtdose_beam'+str(controlPointNumber[0])+'_CP'+str(controlPointNumber[1])+'.dcm', write_like_original = False)
 
         for beamSpotNumber in args.DoseBeamSpots:
-                print('Working on rtdose, Beam:'+str(beamSpotNumber[0])+' ControlPoint:'+str(beamSpotNumber[1])+' BeamSpot:'+str(beamSpotNumber[2])+'...')               
-                
+                print('Working on rtdose, Beam:'+str(beamSpotNumber[0])+' ControlPoint:'+str(beamSpotNumber[1])+' BeamSpot:'+str(beamSpotNumber[2])+'...')
+
                 bsdoseds = copy.deepcopy(doseds)
                 bsdoseds.SOPInstanceUID = pydicom.uid.generate_uid()
                 bsdoseds.SeriesInstanceUID = pydicom.uid.generate_uid()
@@ -890,11 +891,11 @@ for folder in caseFolders:
                 rfgs.ReferencedBeamSequence[0].ReferencedControlPointSequence = rcps
                 rfgs.ReferencedFractionGroupNumber = 1
                 bsdoseds.ReferencedRTPlanSequence[0].ReferencedFractionGroupSequence.append(rfgs)
-                
+
                 if(int(beamSpotNumber[1]) % 2 == 0):
                     print("NOTE: this control point contains no dose, so skipping.")
                     continue
-                
+
                 idx = currentbeamlist[beamSpotNumber[0]-1]["ControlPoints"][int((beamSpotNumber[1]-1)/2)]["FileIndexStart"] + beamSpotNumber[2] - 1
 
                 SampledIndices = [np.array([[db[0,0], db[1,0], db[2,0]]]),
@@ -924,11 +925,11 @@ for folder in caseFolders:
                         SampledDoses.extend(SampledDosePart)
                 SampledIndices = np.vstack(SampledIndices)
                 SampledDoses = np.array(SampledDoses)
-                
+
                 dose = np.zeros_like(subct)
                 dose[mask] = griddata(SampledIndices, SampledDoses, IndicesToCalculate[mask])
                 bsdoseds.PixelData = np.swapaxes(dose, 2, 0).flatten().tobytes()
-                
-                bsdoseds.save_as(args.outputPath + "/DICOMs/"+patientFolder+'/rtdose_beam'+str(beamSpotNumber[0])+'_CP'+str(beamSpotNumber[1])+'_SP'+str(beamSpotNumber[2])+'.dcm', write_like_original = False)
 
-        print('DICOM files writen to ' + args.outputPath + "/DICOMs/"+patientFolder)
+                bsdoseds.save_as(outFolder+'rtdose_beam'+str(beamSpotNumber[0])+'_CP'+str(beamSpotNumber[1])+'_SP'+str(beamSpotNumber[2])+'.dcm', write_like_original = False)
+
+        print('DICOM files writen to ' + outFolder)
