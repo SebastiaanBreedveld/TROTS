@@ -20,6 +20,7 @@ parser.add_argument("--ReferringPhysicianName", nargs='?', help="The name of the
 parser.add_argument("--OperatorsName", nargs='?', help="The name of the operator to be saved in the DICOMs", default="")
 parser.add_argument("--TreatmentMachineName", nargs='?', help="The name of the treatment machine name to be saved in the DICOMs", default="TROTS")
 parser.add_argument("--keyHole", nargs='?', help="Whether to use keyhole technique instead of CLOSEDPLANAR_XOR", default=False)
+parser.add_argument("--rtdose", nargs='?', help="Also output rtdose files", default=True)
 parser.add_argument("-b","--folderBasePath", nargs='?', help="The base directory in which the code is run containing all neccessary folders", default=".")
 parser.add_argument("-o", "--outputPath", nargs='?', help="The output directory of the DICOM file", default="/tmp")
 parser.add_argument("-n", "--DoseBeamNumber", type=list, nargs='?', help="A list of beam numbers to be calculated where a separate rtdose_<BeamNumber>.dcm is calculated, format: [BeamNumber_i, ..]. By default, all beams will be included.", default=None)
@@ -253,7 +254,7 @@ for folder in caseFolders:
             rc.ContourSequence = Sequence()
             for sliceIndex in range(0, len(mat['patient']['Contours'][0])):
                 if mat['patient']['Contours'][0][sliceIndex][structIndex] != None:
-                    keyHole = args.keyHole # True is needed by RayStation since CLOSEDPLANAR_XOR is not supported there. Both options lead to the same artefacts in Slicer3D: https://discourse.slicer.org/t/closedplanar-xor-visualization-artefact-with-holes-2d/43589/3
+                    keyHole = args.keyHole if type(args.keyHole)==bool else args.keyHole=='True'# True is needed by RayStation since CLOSEDPLANAR_XOR is not supported there. Both options lead to the same artefacts in Slicer3D: https://discourse.slicer.org/t/closedplanar-xor-visualization-artefact-with-holes-2d/43589/3
                     if keyHole:
                         singleContours = mat['patient']['Contours'][0][sliceIndex][structIndex]
                         lSc = len(singleContours) - 1
@@ -654,7 +655,9 @@ for folder in caseFolders:
             assert(abs(totalMetersetWeightOfBeams - sum(mat["solutionX"])) < MetersetWeightTolerance)
             rtds.save_as(outFolder+'rtplan.dcm', write_like_original = False)
 
-            # write rtplan
+            # write rtdose
+            if not args.rtdose or (type(args.rtdose) == str and args.rtdose=='False'):
+                continue
             print('Working on rtdose...')
             meta = pydicom.Dataset()
             SOPInstanceUID = pydicom.uid.generate_uid()
