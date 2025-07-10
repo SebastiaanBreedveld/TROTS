@@ -562,6 +562,7 @@ for folder in caseFolders:
                         rsDataset.RangeShifterType = "BINARY"
                         be.RangeShifterSequence.append(rsDataset)
                 be.NumberOfControlPoints  = 2*len(beaminfo["ControlPoints"])
+                be.ReferencedPatientSetupNumber = 1 # Required for RS
                 be.IonControlPointSequence = Sequence()
                 be.NumberOfLateralSpreadingDevices = 0
                 be.NumberOfRangeModulators = 0
