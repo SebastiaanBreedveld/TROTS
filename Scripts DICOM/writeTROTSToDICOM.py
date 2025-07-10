@@ -452,12 +452,11 @@ for folder in caseFolders:
                 doseReference.DoseReferenceNumber = dosenumber + 1
                 doseReference.DoseReferenceUID = pydicom.uid.generate_uid()
                 doseReference.DoseReferenceStructureType = "VOLUME"
+                doseReference.DoseReferenceDescription = probleminfo[key]["Name"] + (" Constraint" if(key[2]) else " Objective")
                 if(probleminfo[key]["IsMean"]):
-                    doseReference.DoseReferenceDescription = probleminfo[key]["Name"] + (" Constraint" if(key[2]) else " Objective") + ", WARNING: mean dose"
-                elif(probleminfo[key]["IsRobust"]):
-                    doseReference.DoseReferenceDescription = probleminfo[key]["Name"] + (" Constraint" if(key[2]) else " Objective") + ", WARNING: planned robust"
-                else:
-                    doseReference.DoseReferenceDescription = probleminfo[key]["Name"] + (" Constraint" if(key[2]) else " Objective")
+                    doseReference.DoseReferenceDescription += " (mean)"
+                if(probleminfo[key]["IsRobust"]):
+                    doseReference.DoseReferenceDescription += " (robust)"
                 doseReference.DoseReferenceType = probleminfo[key]["type"]
                 doseReference.ConstraintWeight = format_number_as_ds(float(key[1]))
                 if(probleminfo[key]["type"] == "TARGET"):
