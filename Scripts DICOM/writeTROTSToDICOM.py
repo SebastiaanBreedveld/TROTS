@@ -67,9 +67,17 @@ for folder in caseFolders:
                 for rowIndex in range(0, len(mat['patient']['Beams']['BeamConfig'])):
                     filewriter.writerow([mat['patient']['Beams']['BeamConfig'][rowIndex]['Gantry']] + [mat['patient']['Beams']['BeamConfig'][rowIndex]['Couch']] + [mat['patient']['Beams']['BeamConfig'][rowIndex]['Collimator']])
 
-            filewriter.writerow(['Name', 'Minimise', 'Objective', 'Sufficient', 'Weight', 'Priority', 'IsConstraint'])
+            filewriter.writerow(['Name', 'DataName', 'Robust', 'Minimise', 'Objective', 'Sufficient', 'Weight', 'Priority', 'IsConstraint'])
             for rowIndex in range(0, len(mat['problem']['Name'])):
-                filewriter.writerow([mat['problem']['Name'][rowIndex]] + [mat['problem']['Minimise'][rowIndex]] + [mat['problem']['Objective'][rowIndex]] + [mat['problem']['Sufficient'][rowIndex]] + [mat['problem']['Weight'][rowIndex]] + [mat['problem']['Priority'][rowIndex]] + [mat['problem']['IsConstraint'][rowIndex]])
+                roiName = mat['problem']['Name'][rowIndex]
+                matrixIdx = int(mat['problem']['dataID'][rowIndex])-1
+                dataName = mat['data']['matrix'][matrixIdx]["Name"]
+                if roiName.upper() != 'MU':
+                    structIdx = mat["patient"]["StructureNames"].index(roiName)
+                    isRobust = int(mat["data"]["matrix"][matrixIdx]["A"].shape[0]%9 == 0 and int(mat["data"]["matrix"][matrixIdx]["A"].shape[0]/9==mat["patient"]["SampledVoxels"][structIdx].shape[1]))
+                else:
+                    isRobust = 0
+                filewriter.writerow([roiName] + [dataName] + [isRobust] + [int(mat['problem']['Minimise'][rowIndex])] + [mat['problem']['Objective'][rowIndex]] + [mat['problem']['Sufficient'][rowIndex]] + [mat['problem']['Weight'][rowIndex]] + [int(mat['problem']['Priority'][rowIndex])] + [int(mat['problem']['IsConstraint'][rowIndex])])
 
         for sliceIndex in range(0, nSlicesCT):
             # print('Working on CT slice',sliceIndex,'...')
@@ -418,28 +426,30 @@ for folder in caseFolders:
 
             probleminfo = {}
             for index in range(len(mat["problem"]["Name"])): #all elements of mat["problem"] are the same length
-                # All problem info is grouped accordinding to the unique key = (dataID, weight, is constraint)
+                # All problem info is grouped according to the unique key = (dataID, weight, is constraint)
+                if(mat["problem"]["Name"][index].lower()=="mu"):
+                    continue
 
                 # If two rows have the same key they are merged one being the upper and other being the lower bound
                 key = (float(mat["problem"]["dataID"][index]),float(mat["problem"]["Weight"][index]),bool(mat["problem"]["IsConstraint"][index]))
-                if(mat["problem"]["Name"][index].lower()=="mu"):
-                    continue
+                
+                roiName = mat['problem']['Name'][index]
+                matrixIdx = int(mat['problem']['dataID'][index])-1
+                dataName = mat['data']['matrix'][matrixIdx]["Name"]
+                structIdx = mat["patient"]["StructureNames"].index(roiName)
+                isRobust = int(mat["data"]["matrix"][matrixIdx]["A"].shape[0]%9 == 0 and int(mat["data"]["matrix"][matrixIdx]["A"].shape[0]/9==mat["patient"]["SampledVoxels"][structIdx].shape[1]))
+                if mat["problem"]["IsConstraint"][index] == 0:
+                    if mat["problem"]["Objective"][index] != mat["problem"]["Sufficient"][index]:
+                        print('Warning: sufficient objective',mat["problem"]["Sufficient"][index],'was specified but will not be honored for',dataName)
+                
                 if(key not in probleminfo):
                     constraint = {}
-                    constraint["Name"] = mat["problem"]["Name"][index]
-                    if("mean" in constraint["Name"].lower()):
-                        constraint["IsMean"] = True
-                        constraint["IsRobust"] = False
-                    else:
-                        constraint["IsMean"] = False
-                        structIdx = mat["patient"]["StructureNames"].index(mat["problem"]["Name"][index])
-                        for matrixIdx in range(len(mat["data"]["matrix"])):
-                            if(mat["data"]["matrix"][matrixIdx]["Name"] == mat["problem"]["Name"][index]):
-                                break
-                        constraint["IsRobust"] = mat["data"]["matrix"][matrixIdx]["A"].shape[0]/9==mat["patient"]["SampledVoxels"][structIdx].shape[1]
+                    constraint["Name"] = dataName
+                    constraint["roiName"] = roiName
+                    constraint["IsRobust"] = isRobust
+                    
                     if (("gtv" in constraint["Name"].lower()) or ("ptv" in constraint["Name"].lower()) or ("ctv" in constraint["Name"].lower())):
                         constraint["type"] = "TARGET"
-                        
                         if(mat["problem"]["Minimise"][index]==1):
                             constraint["Max"] = mat["problem"]["Objective"][index]
                             constraint["Min"] = ""
@@ -447,7 +457,7 @@ for folder in caseFolders:
                             constraint["Max"] = ""
                             constraint["Min"] = mat["problem"]["Objective"][index]
                     else:
-                        # If it isn't a TARGET it must be a ORGAN_AT_RISK
+                        # If it isn't a TARGET it must be an ORGAN_AT_RISK
                         constraint["type"] = "ORGAN_AT_RISK"
                         # ORGAN_AT_RISK can only have an upper bound
                         assert(mat["problem"]["Minimise"][index]==1)
@@ -455,7 +465,9 @@ for folder in caseFolders:
                     probleminfo[key] = constraint
                 else:
                     # The constraints must correspond to the same structure
-                    assert(probleminfo[key]["Name"] == mat["problem"]["Name"][index])
+                    assert(probleminfo[key]["Name"] == dataName)
+                    assert(probleminfo[key]["roiName"] == roiName)
+                    assert(probleminfo[key]["IsRobust"] == isRobust)
                     # Only TARGET can have both upper and lower bound
                     assert(probleminfo[key]["type"]=="TARGET") # having upper and lower only make sense for target
                     # Only one upper and one lower can be defined for one key in a TARGET
@@ -469,13 +481,11 @@ for folder in caseFolders:
             rtds.DoseReferenceSequence = Sequence()
             for dosenumber,key in enumerate(probleminfo):
                 doseReference = Dataset()
-                doseReference.ReferencedROINumber = structToROINumber[probleminfo[key]["Name"]]
+                doseReference.ReferencedROINumber = structToROINumber[probleminfo[key]["roiName"]]
                 doseReference.DoseReferenceNumber = dosenumber + 1
                 doseReference.DoseReferenceUID = pydicom.uid.generate_uid()
                 doseReference.DoseReferenceStructureType = "VOLUME"
-                doseReference.DoseReferenceDescription = probleminfo[key]["Name"] + (" Constraint" if(key[2]) else " Objective")
-                if(probleminfo[key]["IsMean"]):
-                    doseReference.DoseReferenceDescription += " (mean)"
+                doseReference.DoseReferenceDescription = ("Constraint: " if(key[2]) else "Objective: ") + probleminfo[key]["Name"]
                 if(probleminfo[key]["IsRobust"]):
                     doseReference.DoseReferenceDescription += " (robust)"
                 doseReference.DoseReferenceType = probleminfo[key]["type"]
@@ -745,7 +755,7 @@ for folder in caseFolders:
                 if not beamNumber in beamnrs:
                     print('Wrong beam number', beamNumber)
                     continue
-                print('Working on beam rtdose, Beam:'+str(beamNumber)+'...')
+                print('Working on rtdose, Beam:'+str(beamNumber)+'...')
                 bdoseds = copy.deepcopy(doseds)
                 bdoseds.SOPInstanceUID = pydicom.uid.generate_uid()
                 bdoseds.SeriesInstanceUID = pydicom.uid.generate_uid()
