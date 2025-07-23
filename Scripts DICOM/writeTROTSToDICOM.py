@@ -12,6 +12,7 @@ import csv
 import seaborn as sns
 from scipy.interpolate import griddata
 
+# -b /opt --TreatmentMachineName CGTR_2021 --rtdose False --tuneID Spot1 --rsID RS7.4cm --keyHole True --halfGantry True --minEnergy 100 --maxEnergy 226.09
 parser = argparse.ArgumentParser()
 parser.add_argument("--Manufacturer", nargs='?', help="The name of the manufacturer to be saved in the DICOMs", default="")
 parser.add_argument("--ManufacturerModelName", nargs='?', help="The name of the manufacturer model to be saved in the DICOMs", default="")
@@ -21,6 +22,11 @@ parser.add_argument("--OperatorsName", nargs='?', help="The name of the operator
 parser.add_argument("--TreatmentMachineName", nargs='?', help="The name of the treatment machine name to be saved in the DICOMs", default="TROTS")
 parser.add_argument("--keyHole", nargs='?', help="Whether to use keyhole technique instead of CLOSEDPLANAR_XOR", default=False)
 parser.add_argument("--rtdose", nargs='?', help="Also output rtdose files", default=True)
+parser.add_argument("--tuneID", nargs='?', help="ScanSpotTuneID", default='TROTS_1.0')
+parser.add_argument("--rsID", nargs='?', help="Overwrite RangeShifterID", default=None)
+parser.add_argument("--halfGantry", nargs='?', help="Whether to add couch angle instead of gantry angles over 180", default=False)
+parser.add_argument("--minEnergy", nargs='?', help="Low threshold for supported minimum beam energy", default=0)
+parser.add_argument("--maxEnergy", nargs='?', help="Low threshold for supported maximum beam energy", default=1000)
 parser.add_argument("-b","--folderBasePath", nargs='?', help="The base directory in which the code is run containing all neccessary folders", default=".")
 parser.add_argument("-o", "--outputPath", nargs='?', help="The output directory of the DICOM file", default="/tmp")
 parser.add_argument("-n", "--DoseBeamNumber", type=list, nargs='?', help="A list of beam numbers to be calculated where a separate rtdose_<BeamNumber>.dcm is calculated, format: [BeamNumber_i, ..]. By default, all beams will be included.", default=None)
@@ -50,6 +56,8 @@ for folder in caseFolders:
             mat = mat73.loadmat(args.folderBasePath+"/"+folder + '/' + matFile)
         else:
             continue
+        if not '01' in matFile:
+            break
         print('Folder and file:', folder, matFile)
         patientFolder = matFile.split('.')[0]
         patientIndexInt = int(patientFolder.split('_')[1])
@@ -323,7 +331,12 @@ for folder in caseFolders:
             rtds.AccessionNumber = rds.AccessionNumber
             rtds.Modality = "RTPLAN"
             rtds.Manufacturer = args.Manufacturer
-            rtds.InstitutionName = args.InstitutionName
+            # rtds.InstitutionName = args.InstitutionName # Optional
+            rtds.SpecificCharacterSet='ISO_IR 100' # Optional
+            rtds.InstanceCreationDate='20250708' # Optional
+            rtds.InstanceCreationTime='112329.000000' # Optional
+            rtds.SeriesTime='112329.000000' # Optional
+            rtds.SoftwareVersions='pydicom' # Optional
             rtds.ReferringPhysicianName = args.ReferringPhysicianName
             rtds.OperatorsName = args.OperatorsName
             rtds.ManufacturerModelName    = args.ManufacturerModelName
@@ -335,20 +348,24 @@ for folder in caseFolders:
             rtds.SeriesInstanceUID = rds.StudyInstanceUID
             rtds.StudyID = rds.StudyID
             rtds.SeriesNumber = 1
-            rtds.InstanceNumber = 1
+            # rtds.InstanceNumber = 1 # Optional
             rtds.FrameOfReferenceUID = rds.FrameOfReferenceUID
             rtds.PositionReferenceIndicator = ''
-            rtds.RTPlanLabel = "TROTS 66/54 Gy"
+            rtds.RTPlanName = "TROTS" # Optional
+            rtds.RTPlanLabel = "66/54 Gy"
             rtds.RTPlanDate = ""
             rtds.RTPlanTime = ""
             rtds.RTPlanGeometry = "PATIENT"
+            rtds.TreatmentProtocols = "PencilBeamScanning" # Optional
+            rtds.PlanIntent = "CURATIVE" # Optional
             rtds.ApprovalStatus = "UNAPPROVED"
+            rtds.PrescriptionDescription = "IMPT_conv2" # Optional
 
             rtds.PatientSetupSequence = Sequence()
             patientSetup = Dataset()
             patientSetup.PatientPosition = mat["patient"]["PatientPosition"]
             patientSetup.PatientSetupNumber = 1
-            patientSetup.PatientSetupLabel = "Standard"
+            # patientSetup.PatientSetupLabel = "Standard" # Optional
             rtds.PatientSetupSequence.append(patientSetup)
 
             patientIndex = patientIndexInt-1
@@ -446,13 +463,15 @@ for folder in caseFolders:
                 # print(roiName, dataName, isRobust, mat["problem"]["IsConstraint"][index])
                 if mat["problem"]["IsConstraint"][index] == 0:
                     if mat["problem"]["Objective"][index] != mat["problem"]["Sufficient"][index]:
-                        print('Warning: sufficient objective',mat["problem"]["Sufficient"][index],'was specified but will not be honored for',dataName)
+                        print('Warning: sufficient objective',mat["problem"]["Sufficient"][index],'was specified but does not match with objective for',dataName)
 
                 if(key not in probleminfo):
                     constraint = {}
                     constraint["Name"] = dataName
                     constraint["roiName"] = roiName
                     constraint["IsRobust"] = isRobust
+                    if not mat["problem"]["IsConstraint"][index]:
+                        constraint['Sufficient'] = mat["problem"]['Sufficient'][index]
 
                     if (("gtv" in constraint["Name"].lower()) or ("ptv" in constraint["Name"].lower()) or ("ctv" in constraint["Name"].lower())):
                         constraint["type"] = "TARGET"
@@ -504,8 +523,13 @@ for folder in caseFolders:
                         doseReference.TargetMinimumDose = format_number_as_ds(float(probleminfo[key]["Min"]))
                     if(probleminfo[key]["Max"]!=""):
                         doseReference.TargetMaximumDose = format_number_as_ds(float(probleminfo[key]["Max"]))
+                    sufficients = mat['problem']['Sufficient'][mat['problem']['Name'].index(probleminfo[key]["roiName"])]
+                    if sufficients is not None and type(sufficients) == np.ndarray:
+                        doseReference.TargetPrescriptionDose = format_number_as_ds(float(sufficients))
                 else:
                     doseReference.OrganAtRiskMaximumDose = format_number_as_ds(float(probleminfo[key]["Max"]))
+                    if args.TreatmentMachineName == 'CGTR_2021': #
+                        continue
                 rtds.DoseReferenceSequence.append(doseReference)
 
             rtds.FractionGroupSequence = Sequence()
@@ -514,13 +538,16 @@ for folder in caseFolders:
             fractionds.NumberOfFractionsPlanned = 1
             fractionds.NumberOfBeams = len(currentbeamlist)
             fractionds.NumberOfBrachyApplicationSetups = 0
-            fractionds.BeamSequence = Sequence()
+            fractionds.ReferencedBeamSequence = Sequence()
             for beaminfo in currentbeamlist:
                 be = Dataset()
                 be.BeamMeterset = format_number_as_ds(beaminfo["FinalCumulativeMetersetWeight"])
-
-                be.BeamNumber = beaminfo["BeamNumber"]
-                fractionds.BeamSequence.append(be)
+                be.ReferencedBeamNumber = beaminfo["BeamNumber"]
+                fractionds.ReferencedBeamSequence.append(be)
+            # fractionds.ReferencedDoseReferenceSequence = Sequence() # Optional
+            # rdr = Dataset()
+            # rdr.ReferencedDoseReferenceNumber=1
+            # fractionds.ReferencedDoseReferenceSequence.append(rdr)
             rtds.FractionGroupSequence.append(fractionds)
 
             rtds.ReferencedStructureSetSequence = Sequence()
@@ -532,14 +559,16 @@ for folder in caseFolders:
             totalMetersetWeightOfBeams = 0
             for beaminfo in currentbeamlist:
                 be = Dataset()
-                be.Manufacturer = args.Manufacturer
-                be.InstitutionName  = args.InstitutionName
-                be.ManufacturerModelName  = args.ManufacturerModelName
-                be.TreatmentMachineName   = args.TreatmentMachineName
-                be.InstitutionAddress = ""
+                be.Manufacturer = args.Manufacturer # Optional
+                # be.InstitutionName = '' # Optional # Optional
+                # be.InstitutionAddress = args.InstitutionName # Optional
+                # be.ManufacturerModelName = args.ManufacturerModelName # Optional
+                # be.ToleranceTableNumber = '0' # Optional
+                be.TreatmentMachineName = args.TreatmentMachineName
                 be.PrimaryDosimeterUnit = "MU"
                 be.BeamNumber             = beaminfo["BeamNumber"]
                 be.BeamName               = str(beaminfo["BeamNumber"])
+                be.BeamDescription        = '' # Optional
                 be.BeamType               = 'STATIC'
                 be.RadiationType          = "PROTON"
                 be.TreatmentDeliveryType  = 'TREATMENT'
@@ -561,22 +590,31 @@ for folder in caseFolders:
                         rsDataset.AccessoryCode = "Undefined Accessory Code"
                         rsDataset.RangeShifterNumber = RSindex
                         rsDataset.RangeShifterID = "Rs " + str(beaminfo["RangeShifters"][RSindex]) + " mm"
+                        if not args.rsID == None:
+                            rsDataset.RangeShifterID = args.rsID
                         rsDataset.RangeShifterType = "BINARY"
                         be.RangeShifterSequence.append(rsDataset)
+                # Optional snout sequence:
+                sn = Dataset()
+                sn.SnoutID = 'Snout'
+                be.SnoutSequence = Sequence()
+                be.SnoutSequence.append(sn)
                 be.NumberOfControlPoints  = 2*len(beaminfo["ControlPoints"])
                 be.ReferencedPatientSetupNumber = 1 # Required for RS
                 be.IonControlPointSequence = Sequence()
                 be.NumberOfLateralSpreadingDevices = 0
                 be.NumberOfRangeModulators = 0
                 be.PatientSupportType = 'TABLE'
+                be.PatientSupportID = 'TABLE' # Optional
 
                 MetersetWeightTolerance = 1e-8
                 totalMetersetWeightOfControlPoints = 0
+                halfGantry = args.halfGantry if type(args.halfGantry)==bool else args.halfGantry=='True'
                 for controlpointinfo in beaminfo["ControlPoints"]:
                     icpoi = Dataset()
                     icpoi.NominalBeamEnergyUnit = 'MEV'
                     icpoi.ControlPointIndex = 2*controlpointinfo["ControlPointNumber"]
-                    icpoi.NominalBeamEnergy = format_number_as_ds(controlpointinfo["BeamEnergy"])
+                    icpoi.NominalBeamEnergy = format_number_as_ds(min(max(float(args.minEnergy),controlpointinfo["BeamEnergy"]), float(args.maxEnergy)))
                     icpoi.CumulativeMetersetWeight = format_number_as_ds(float(controlpointinfo["CumulativeMetersetWeight"]))
                     icpoi.GantryAngle = mat['patient']['Beams']['BeamConfig'][beaminfo["FileBeamNumber"]-1]['Gantry']
                     icpoi.GantryRotationDirection = 'NONE'
@@ -594,8 +632,13 @@ for folder in caseFolders:
                     icpoi.TableTopRollRotationDirection = 'NONE'
                     icpoi.GantryPitchAngle = 0
                     icpoi.GantryPitchRotationDirection = 'NONE'
-                    icpoi.SnoutPosition = None
-                    icpoi.ScanSpotTuneID = 'TROTS_1.0'
+                    if halfGantry and icpoi.GantryAngle > 180:
+                        icpoi.PatientSupportAngle += 180
+                        if icpoi.PatientSupportAngle > 180: # move it to +/-180
+                            icpoi.PatientSupportAngle -= 360
+                        icpoi.GantryAngle = 360 - icpoi.GantryAngle
+                    icpoi.SnoutPosition = 0 # or None if you remove the optional SnoutSequence
+                    icpoi.ScanSpotTuneID = args.tuneID
                     icpoi.NumberOfScanSpotPositions = len(controlpointinfo["MetersetWeights"])
                     icpoi.ScanSpotPositionMap = controlpointinfo["ScanSpotPositions"]
                     icpoi.ScanSpotMetersetWeights = controlpointinfo["MetersetWeights"]
@@ -616,14 +659,20 @@ for folder in caseFolders:
                         totalMetersetWeightOfControlPoints += sum(icpoi.ScanSpotMetersetWeights)
                     else:
                         totalMetersetWeightOfControlPoints += icpoi.ScanSpotMetersetWeights
+                    # icpoi.ReferencedDoseReferenceSequence = Sequence() # Optional
+                    # for rdn in range(len(...))
+                        # rdrv = Dataset()
+                        # rdrv.CumulativeDoseReferenceCoefficient = None
+                        # rdrv.ReferencedDoseReferenceNumber = rdn
+                        # icpoi.ReferencedDoseReferenceSequence.append(rdrv)
                     be.IonControlPointSequence.append(icpoi)
 
                     icpoi = Dataset()
                     icpoi.NominalBeamEnergyUnit = 'MEV'
                     icpoi.ControlPointIndex = 2*controlpointinfo["ControlPointNumber"] + 1
-                    icpoi.NominalBeamEnergy = format_number_as_ds(controlpointinfo["BeamEnergy"])
+                    icpoi.NominalBeamEnergy = format_number_as_ds(min(max(float(args.minEnergy),controlpointinfo["BeamEnergy"]), float(args.maxEnergy)))
                     icpoi.CumulativeMetersetWeight = format_number_as_ds(controlpointinfo["CumulativeMetersetWeight"]+ sum(controlpointinfo["MetersetWeights"]))
-                    icpoi.ScanSpotTuneID = 'TROTS_1.0'
+                    icpoi.ScanSpotTuneID = args.tuneID
                     icpoi.NumberOfScanSpotPositions = len(controlpointinfo["MetersetWeights"])
                     icpoi.ScanSpotPositionMap = controlpointinfo["ScanSpotPositions"]
                     icpoi.ScanSpotMetersetWeights = [0.0 for i in range(len(controlpointinfo["MetersetWeights"]))]
@@ -647,7 +696,6 @@ for folder in caseFolders:
                     else:
                         totalMetersetWeightOfControlPoints += icpoi.ScanSpotMetersetWeights
                     be.IonControlPointSequence.append(icpoi)
-                be.ToleranceTableNumber = 0
                 assert(abs(be.FinalCumulativeMetersetWeight - icpoi.CumulativeMetersetWeight) < MetersetWeightTolerance)
                 assert(abs(be.FinalCumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
                 rtds.IonBeamSequence.append(be)
