@@ -56,8 +56,8 @@ for folder in caseFolders:
             mat = mat73.loadmat(args.folderBasePath+"/"+folder + '/' + matFile)
         else:
             continue
-        if not '01' in matFile:
-            break
+        # if not '01' in matFile:
+            # break
         print('Folder and file:', folder, matFile)
         patientFolder = matFile.split('.')[0]
         patientIndexInt = int(patientFolder.split('_')[1])
