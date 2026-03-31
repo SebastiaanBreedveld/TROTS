@@ -879,10 +879,14 @@ for folder in caseFolders:
                 SampledIndices = np.vstack(SampledIndices)
                 SampledDoses = np.array(SampledDoses)
 
-                dose = np.zeros_like(subct)
+                dose = np.zeros_like(subct, dtype=float)
                 dose[mask] = griddata(SampledIndices, SampledDoses, IndicesToCalculate[mask])
-                bdoseds.PixelData = np.swapaxes(dose, 2, 0).flatten().tobytes()
-
+                dose = np.nan_to_num(dose, nan=0.0, posinf=0.0, neginf=0.0)
+                max_dose = np.max(dose)
+                bdoseds.DoseGridScaling = scaling
+                dose_uint16 = (dose / scaling).astype(np.uint16)
+                bdoseds.PixelData = np.swapaxes(dose_uint16, 2, 0).flatten().tobytes()
+                
                 bdoseds.save_as(outFolder+'rtdose_beam'+str(beamNumber)+'.dcm', write_like_original = False)
 
             for controlPointNumber in args.DoseControlPoints:
@@ -941,9 +945,13 @@ for folder in caseFolders:
                 SampledIndices = np.vstack(SampledIndices)
                 SampledDoses = np.array(SampledDoses)
 
-                dose = np.zeros_like(subct)
+                dose = np.zeros_like(subct, dtype=float)
                 dose[mask] = griddata(SampledIndices, SampledDoses, IndicesToCalculate[mask])
-                cpdoseds.PixelData = np.swapaxes(dose, 2, 0).flatten().tobytes()
+                dose = np.nan_to_num(dose, nan=0.0, posinf=0.0, neginf=0.0)
+                max_dose = np.max(dose)
+                cpdoseds.DoseGridScaling = scaling
+                dose_uint16 = (dose / scaling).astype(np.uint16)
+                cpdoseds.PixelData = np.swapaxes(dose_uint16, 2, 0).flatten().tobytes()
 
                 cpdoseds.save_as(outFolder+'rtdose_beam'+str(controlPointNumber[0])+'_CP'+str(controlPointNumber[1])+'.dcm', write_like_original = False)
 
@@ -1004,9 +1012,13 @@ for folder in caseFolders:
                 SampledIndices = np.vstack(SampledIndices)
                 SampledDoses = np.array(SampledDoses)
 
-                dose = np.zeros_like(subct)
+                dose = np.zeros_like(subct, dtype=float)
                 dose[mask] = griddata(SampledIndices, SampledDoses, IndicesToCalculate[mask])
-                bsdoseds.PixelData = np.swapaxes(dose, 2, 0).flatten().tobytes()
+                dose = np.nan_to_num(dose, nan=0.0, posinf=0.0, neginf=0.0)
+                max_dose = np.max(dose)
+                bsdoseds.DoseGridScaling = scaling
+                dose_uint16 = (dose / scaling).astype(np.uint16)
+                bsdoseds.PixelData = np.swapaxes(dose_uint16, 2, 0).flatten().tobytes()
 
                 bsdoseds.save_as(outFolder+'rtdose_beam'+str(beamSpotNumber[0])+'_CP'+str(beamSpotNumber[1])+'_SP'+str(beamSpotNumber[2])+'.dcm', write_like_original = False)
 
