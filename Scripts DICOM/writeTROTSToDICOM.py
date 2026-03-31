@@ -32,6 +32,7 @@ parser.add_argument("-o", "--outputPath", nargs='?', help="The output directory 
 parser.add_argument("-n", "--DoseBeamNumber", type=list, nargs='?', help="A list of beam numbers to be calculated where a separate rtdose_<BeamNumber>.dcm is calculated, format: [BeamNumber_i, ..]. By default, all beams will be included.", default=None)
 parser.add_argument("-c", "--DoseControlPoints", type=list, nargs='?', help="A list of control point numbers where a separate rtdose_<BeamNumber>_<ControlPointNumber>.dcm is calculated, format: [(BeamNumber_i,ControlPoint_i), ...]", default=[])
 parser.add_argument("-s", "--DoseBeamSpots", type=list, nargs='?', help="A list of beam spot numbers where the rtdose_<BeamNumber>_<ControlPointNumber>_<BeamSpotNumber>.dcm is calculated, format: [(BeamNumber_i,ControlPoint_i,BeamSpotNumber_i), ...]", default=[])
+parser.add_argument("--DoseBoxLikeCT", nargs='?', help="Set to true to override the clipped dose box defined by TROTS and use instead the full CT as dose grid", default=False)
 args = parser.parse_args()
 
 pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
@@ -526,12 +527,17 @@ for folder in caseFolders:
                     sufficients = mat['problem']['Sufficient'][mat['problem']['Name'].index(probleminfo[key]["roiName"])]
                     if sufficients is not None and type(sufficients) == np.ndarray:
                         doseReference.TargetPrescriptionDose = format_number_as_ds(float(sufficients))
+                    # else:
+                    #     if probleminfo[key]["Max"] != '':
+                    #         doseReference.TargetPrescriptionDose = format_number_as_ds(float(probleminfo[key]["Max"]))
+                    #     else: 
+                    #         doseReference.TargetPrescriptionDose = format_number_as_ds(float(probleminfo[key]["Min"]))
                 else:
                     doseReference.OrganAtRiskMaximumDose = format_number_as_ds(float(probleminfo[key]["Max"]))
                     if args.TreatmentMachineName == 'CGTR_2021': #
                         continue
                 rtds.DoseReferenceSequence.append(doseReference)
-
+                
             rtds.FractionGroupSequence = Sequence()
             fractionds = Dataset()
             fractionds.FractionGroupNumber = 1
@@ -738,7 +744,17 @@ for folder in caseFolders:
             doseds.StudyID = rds.StudyID
             doseds.SeriesNumber = 1
             doseds.InstanceNumber = 1
-            db=mat["patient"]["DoseBox"]
+            db=mat["patient"]["DoseBox"] # Since eg brainstem or patient have dose calculated outside the defined DoseBox
+            likeCT = args.DoseBoxLikeCT if type(args.DoseBoxLikeCT) == bool else args.DoseBoxLikeCT == "True"
+            if likeCT:
+                print('Ignoring clipped DoseBox, using CT grid instead')
+                db[0][0] = 1
+                db[0][1] = nColumnsCT
+                db[1][0] = 1
+                db[1][1] = nRowsCT
+                db[2][0] = 1
+                db[2][1] = nSlicesCT
+            
             resolution = mat["patient"]["Resolution"]
             poffset = mat["patient"]["Offset"]
             doseds.ImagePositionPatient = [format_number_as_ds(poffset[i] + (db[i][0] - 1)*resolution[i]) for i in range(3)]
