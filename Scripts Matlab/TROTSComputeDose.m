@@ -51,7 +51,7 @@ function Dose = TROTSComputeDose(solutionX, patient, data)
 % Ensure people read help
 fprintf('Reconstructing dose. (BTW, did you read the warning in: help TROTSComputeDose ?)\n');
 
-% Because girddata only interpolates inside a convex hull, and we want to
+% Because griddata only interpolates inside a convex hull, and we want to
 % avoid NaNs, add the points given by to DoseBox as 0 Gy dose. This makes
 % the dose near the end of the body contour more realistic.
 Edges(:, 1) = double(patient.DoseBox(:, 1) - 1);
