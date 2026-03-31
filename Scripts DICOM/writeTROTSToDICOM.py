@@ -759,7 +759,6 @@ for folder in caseFolders:
             doseds.DoseUnits = "GY"
             doseds.DoseType = "PHYSICAL"
             doseds.DoseSummationType = "PLAN"
-            doseds.DoseGridScaling = 1
             doseds.PositionReferenceIndicator = ds.PositionReferenceIndicator
 
             doseds.ReferencedRTPlanSequence = Sequence()
@@ -801,9 +800,14 @@ for folder in caseFolders:
             IndicesToCalculate = np.rollaxis(IndicesToCalculate, 0, 4)
             subct = mat["patient"]["CT"][db[0][0]-1:db[0][1], db[1][0]-1:db[1][1], db[2][0]-1:db[2][1]]
             mask = subct > -1024
-            dose = np.zeros_like(subct)
+            dose = np.zeros_like(subct, dtype=float)
             dose[mask] = griddata(SampledIndices, SampledDoses, IndicesToCalculate[mask])
-            doseds.PixelData = np.swapaxes(dose, 2, 0).flatten().tobytes()
+            dose = np.nan_to_num(dose, nan=0.0, posinf=0.0, neginf=0.0)
+            max_dose = np.max(dose)
+            scaling = max_dose / 65535 if max_dose > 0 else 1.0
+            doseds.DoseGridScaling = scaling
+            dose_uint16 = (dose / scaling).astype(np.uint16)
+            doseds.PixelData = np.swapaxes(dose_uint16, 2, 0).flatten().tobytes()
 
             doseds.save_as(outFolder + 'rtdose.dcm', write_like_original = False)
 
