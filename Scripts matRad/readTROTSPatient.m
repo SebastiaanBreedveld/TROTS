@@ -18,6 +18,7 @@ clear, clc, close all
 patientFolder = '/tmp/'; % with TROTS mat file
 TrotsMatFile = patientFolder + "Protons_01.mat";
 load(TrotsMatFile);
+activateMultipleScenarios = true;
 
 %TROTS has: data, patient, problem, problem_lex, solutionX
 %matRad needs: cst, ct, patientFolder, pln, stf, dij
@@ -278,7 +279,10 @@ dij.ctGrid.dimensions  = ct.cubeDim;
 dij.ctGrid.numOfVoxels = prod(dij.ctGrid.dimensions);
 
 dij.numOfBeams         = pln.propStf.numOfBeams;
-dij.numOfScenarios     = 1; % for the moment we exclude the 9 scenarios TROTS
+dij.numOfScenarios     = 1;
+if activateMultipleScenarios
+    dij.numOfScenarios = 9;
+end
 dij.numOfRaysPerBeam   = patient.Beams.ElementIndex;
 dij.totalNumOfBixels   = spots;% sum([stf(:).totalNumOfBixels]);
 dij.totalNumOfRays     = sum(dij.numOfRaysPerBeam);
@@ -318,8 +322,7 @@ for i = 1:dij.numOfScenarios
             return
         end
         if mod(voxels,9) == 0 && voxels/9 == svoxels
-            disp('Warning: Multiple scenarios not yet supported')
-            struct_dij = struct_dij(1:svoxels,:); % It's the first 1/9 (%) of all rows, not one out of very 9 (1:9:end)
+            struct_dij = struct_dij(svoxels*(i-1)+1:svoxels*i,:); % Scenario 1 is the first 1/9 (%) of all rows, not one out of very 9 (1:9:end)
             voxels = size(struct_dij,1);
         end
         if voxels ~= svoxels
