@@ -56,6 +56,7 @@ nist_energy, nist_range = loadnistdata()
 from scipy.interpolate import interp1d
 energy_to_range = interp1d(nist_energy, nist_range, kind='cubic', fill_value="extrapolate")
 range_to_energy = interp1d(nist_range, nist_energy, kind='cubic', fill_value="extrapolate")
+hideRangeShifter = args.hideRangeShifter if type(args.hideRangeShifter) == bool else args.hideRangeShifter == "True"
 
 caseFolders = ['Prostate_CK', 'Head-and-Neck', 'Protons', 'Liver', 'Prostate_BT', 'Prostate_VMAT', 'Head-and-Neck-Alt']
 for folder in caseFolders:
