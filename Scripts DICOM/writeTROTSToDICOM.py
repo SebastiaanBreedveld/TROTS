@@ -726,7 +726,7 @@ for folder in caseFolders:
                         if final_r<=0:
                             raise ValueError("Invalid negative range value")
                         final_e=range_to_energy(final_r)
-                    icpoi.NominalBeamEnergy = format_number_as_ds(E)
+                        icpoi.NominalBeamEnergy = format_number_as_ds(E)
                         
 
                         
