@@ -718,22 +718,6 @@ for folder in caseFolders:
                                 rsSettings.ReferencedRangeShifterNumber = beaminfo["RangeShifters"].index(controlpointinfo["RangeShifter"])
                             icpoi.RangeShifterSettingsSequence.append(rsSettings)
 
-                    #Reading NIST file using the package nist-calculators
-                    from star import ProtonSTARCalculator, ProtonMaterials
-                    def loadnistdata():
-                        material = ProtonMaterials.WATER_LIQUID
-                        calculator = ProtonSTARCalculator(material)
-                        table = calculator.calculate_table()
-                        energies=table['energy']
-                        ranges=table['csda_range']
-                    return np.array(energies), np.array(ranges)
-                
-                    nist_energy, nist_range = loadnistdata()
-                
-                    #Functions to convert enery to range and viceversa
-                    from scipy.interpolate import interp1d
-                    energy_to_range = interp1d(nist_energy, nist_range, kind='cubic', fill_value="extrapolate")
-                    range_to_energy = interp1d(nist_range, nist_energy, kind='cubic', fill_value="extrapolate")
                 
                     if  args.hideRangeShifter and controlpointinfo["RangeShifter"]!=0:
                         original_e=float(icpoi.NominalBeamEnergy)
