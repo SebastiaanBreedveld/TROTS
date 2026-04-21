@@ -606,7 +606,7 @@ for folder in caseFolders:
                 be.FinalCumulativeMetersetWeight = format_number_as_ds(beaminfo["FinalCumulativeMetersetWeight"])
                 be.ScanMode                   = 'MODULATED'
                 be.VirtualSourceAxisDistances = SAD
-                if args.hideRangeShifter or (len(beaminfo["RangeShifters"]) ==0):
+                if hideRangeShifter or (len(beaminfo["RangeShifters"]) ==0):
                     be.NumberOfRangeShifters = 0
                 else:
                     numberOfRangeShifters = len(beaminfo["RangeShifters"])
