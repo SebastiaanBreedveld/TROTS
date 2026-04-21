@@ -729,7 +729,7 @@ if hideRangeShifter == False:
                         final_r=original_r-wet
                         if final_r<=0:
                             raise ValueError("Invalid negative range value")
-                        final_e=range_to_energy(final_r)
+                        final_e=float(range_to_energy(final_r))
                         icpoi.NominalBeamEnergy = format_number_as_ds(final_e)
                         
 
