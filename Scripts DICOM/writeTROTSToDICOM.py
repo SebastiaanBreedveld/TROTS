@@ -39,6 +39,24 @@ args = parser.parse_args()
 
 pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
 
+
+#Reading NIST file using the package nist-calculators
+from star import ProtonSTARCalculator, ProtonMaterials
+def loadnistdata():
+    material = ProtonMaterials.WATER_LIQUID
+    calculator = ProtonSTARCalculator(material)
+    table = calculator.calculate_table()
+    energies=table['energy']
+    ranges=table['csda_range']
+    return np.array(energies), np.array(ranges)
+                
+nist_energy, nist_range = loadnistdata()
+
+#Functions to convert energy to range and viceversa
+from scipy.interpolate import interp1d
+energy_to_range = interp1d(nist_energy, nist_range, kind='cubic', fill_value="extrapolate")
+range_to_energy = interp1d(nist_range, nist_energy, kind='cubic', fill_value="extrapolate")
+
 caseFolders = ['Prostate_CK', 'Head-and-Neck', 'Protons', 'Liver', 'Prostate_BT', 'Prostate_VMAT', 'Head-and-Neck-Alt']
 for folder in caseFolders:
     try:
