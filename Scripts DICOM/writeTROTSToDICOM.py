@@ -706,7 +706,7 @@ if hideRangeShifter == False:
                     icpoi.ScanSpotMetersetWeights = [0.0 for i in range(len(controlpointinfo["MetersetWeights"]))]
                     icpoi.ScanningSpotSize = [sigma1,sigma2]
                     icpoi.NumberOfPaintings = 1
-                    if args.hideRangeShifter==False:
+                    if hideRangeShifter==False:
                         if(beaminfo["ConstantRangeShifter"]==False):
                             icpoi.RangeShifterSettingsSequence = Sequence()
                             rsSettings = Dataset()
