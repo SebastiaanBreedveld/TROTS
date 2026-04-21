@@ -606,7 +606,7 @@ for folder in caseFolders:
                 be.ScanMode                   = 'MODULATED'
                 be.VirtualSourceAxisDistances = SAD
                 if args.hideRangeShifter or (len(beaminfo["RangeShifters"]) ==0):
-                    be.NumberOfRangeShifters = numberOfRangeShifters
+                    be.NumberOfRangeShifters = 0
                 else:
                     numberOfRangeShifters = len(beaminfo["RangeShifters"])
                     be.NumberOfRangeShifters = numberOfRangeShifters
