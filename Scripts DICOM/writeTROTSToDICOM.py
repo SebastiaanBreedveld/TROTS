@@ -721,7 +721,7 @@ if hideRangeShifter == False:
                             icpoi.RangeShifterSettingsSequence.append(rsSettings)
 
                 
-                    if  args.hideRangeShifter and controlpointinfo["RangeShifter"]!=0:
+                    if  hideRangeShifter and controlpointinfo["RangeShifter"]!=0:
                         original_e=float(icpoi.NominalBeamEnergy)
                         original_r=energy_to_range(original_e)
                         wet=beaminfo["RangeShifters"][0] / 10 #convert mm in cm
