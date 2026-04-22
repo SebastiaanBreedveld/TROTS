@@ -673,7 +673,7 @@ for folder in caseFolders:
                     sigma2 = np.interp(controlpointinfo["BeamEnergy"],beamSigmaEnergy[:][1], beamSigmas[:][1])
                     icpoi.ScanningSpotSize = [sigma1,sigma2]
                     icpoi.NumberOfPaintings = 1
-                    if args.hideRangeShifter==False: #Range Shifter unhidden
+                    if hideRangeShifter==False: #Range Shifter unhidden
                         if((beaminfo["ConstantRangeShifter"]==False) or ((controlpointinfo["ControlPointNumber"]==0) and (controlpointinfo["RangeShifter"]!=0))):
                             icpoi.RangeShifterSettingsSequence = Sequence()
                             for RSindex in range(numberOfRangeShifters):
