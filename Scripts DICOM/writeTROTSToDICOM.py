@@ -673,20 +673,20 @@ for folder in caseFolders:
                     sigma2 = np.interp(controlpointinfo["BeamEnergy"],beamSigmaEnergy[:][1], beamSigmas[:][1])
                     icpoi.ScanningSpotSize = [sigma1,sigma2]
                     icpoi.NumberOfPaintings = 1
-if hideRangeShifter == False:
-                    if((beaminfo["ConstantRangeShifter"]==False) or ((controlpointinfo["ControlPointNumber"]==0) and (controlpointinfo["RangeShifter"]!=0))):
-                        icpoi.RangeShifterSettingsSequence = Sequence()
-                        for RSindex in range(numberOfRangeShifters):
-                           rsSettings = Dataset()
-                           rsSettings.RangeShifterSetting = "OUT" if(controlpointinfo["RangeShifter"]==0) else "IN"
-                           rsSettings.RangeShifterWaterEquivalentThickness = beaminfo["RangeShifters"][RSindex]
-                           rsSettings.ReferencedRangeShifterNumber = RSindex
-                        icpoi.RangeShifterSettingsSequence.append(rsSettings)
-                    assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
-                    if(icpoi.NumberOfScanSpotPositions != 1):
-                        totalMetersetWeightOfControlPoints += sum(icpoi.ScanSpotMetersetWeights)
-                    else:
-                        totalMetersetWeightOfControlPoints += icpoi.ScanSpotMetersetWeights
+                    if hideRangeShifter == False:
+                        if((beaminfo["ConstantRangeShifter"]==False) or ((controlpointinfo["ControlPointNumber"]==0) and (controlpointinfo["RangeShifter"]!=0))):
+                            icpoi.RangeShifterSettingsSequence = Sequence()
+                            for RSindex in range(numberOfRangeShifters):
+                               rsSettings = Dataset()
+                               rsSettings.RangeShifterSetting = "OUT" if(controlpointinfo["RangeShifter"]==0) else "IN"
+                               rsSettings.RangeShifterWaterEquivalentThickness = beaminfo["RangeShifters"][RSindex]
+                               rsSettings.ReferencedRangeShifterNumber = RSindex
+                            icpoi.RangeShifterSettingsSequence.append(rsSettings)
+                        assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
+                        if(icpoi.NumberOfScanSpotPositions != 1):
+                            totalMetersetWeightOfControlPoints += sum(icpoi.ScanSpotMetersetWeights)
+                        else:
+                            totalMetersetWeightOfControlPoints += icpoi.ScanSpotMetersetWeights
                     # icpoi.ReferencedDoseReferenceSequence = Sequence() # Optional
                     # for rdn in range(len(...))
                         # rdrv = Dataset()
