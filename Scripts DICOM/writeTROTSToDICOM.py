@@ -673,20 +673,31 @@ for folder in caseFolders:
                     sigma2 = np.interp(controlpointinfo["BeamEnergy"],beamSigmaEnergy[:][1], beamSigmas[:][1])
                     icpoi.ScanningSpotSize = [sigma1,sigma2]
                     icpoi.NumberOfPaintings = 1
-                    if hideRangeShifter == False:
+                    if args.hideRangeShifter==False: #Range Shifter unhidden
                         if((beaminfo["ConstantRangeShifter"]==False) or ((controlpointinfo["ControlPointNumber"]==0) and (controlpointinfo["RangeShifter"]!=0))):
                             icpoi.RangeShifterSettingsSequence = Sequence()
                             for RSindex in range(numberOfRangeShifters):
-                               rsSettings = Dataset()
-                               rsSettings.RangeShifterSetting = "OUT" if(controlpointinfo["RangeShifter"]==0) else "IN"
-                               rsSettings.RangeShifterWaterEquivalentThickness = beaminfo["RangeShifters"][RSindex]
-                               rsSettings.ReferencedRangeShifterNumber = RSindex
+                                rsSettings = Dataset()
+                                rsSettings.RangeShifterSetting = "OUT" if(controlpointinfo["RangeShifter"]==0) else "IN"
+                                rsSettings.RangeShifterWaterEquivalentThickness = beaminfo["RangeShifters"][RSindex]
+                                rsSettings.ReferencedRangeShifterNumber = RSindex
                             icpoi.RangeShifterSettingsSequence.append(rsSettings)
-                        assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
-                        if(icpoi.NumberOfScanSpotPositions != 1):
-                            totalMetersetWeightOfControlPoints += sum(icpoi.ScanSpotMetersetWeights)
-                        else:
-                            totalMetersetWeightOfControlPoints += icpoi.ScanSpotMetersetWeights
+
+                    if args.hideRangeShifter and controlpointinfo["RangeShifter"] != 0: 
+                        original_e=float(icpoi.NominalBeamEnergy)
+                        original_r=energy_to_range(original_e)
+                        wet=beaminfo["RangeShifters"][0]/10
+                        final_r=original_r-wet
+                        if final_r<=0:
+                            final_r = float(original_r)
+                            final_e = float(original_e)
+                        final_e=float(range_to_energy(final_r))
+                    icpoi.NominalBeamEnergy=format_number_as_ds(final_e)
+                    assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
+                    if(icpoi.NumberOfScanSpotPositions != 1):
+                        totalMetersetWeightOfControlPoints += sum(icpoi.ScanSpotMetersetWeights)
+                    else:
+                        totalMetersetWeightOfControlPoints += icpoi.ScanSpotMetersetWeights
                             
                     if  hideRangeShifter and controlpointinfo["RangeShifter"]!=0:
                         original_e=float(icpoi.NominalBeamEnergy)
