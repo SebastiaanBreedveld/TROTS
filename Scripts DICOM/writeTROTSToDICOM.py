@@ -698,17 +698,6 @@ for folder in caseFolders:
                         totalMetersetWeightOfControlPoints += sum(icpoi.ScanSpotMetersetWeights)
                     else:
                         totalMetersetWeightOfControlPoints += icpoi.ScanSpotMetersetWeights
-                            
-                    if  hideRangeShifter and controlpointinfo["RangeShifter"]!=0:
-                        original_e=float(icpoi.NominalBeamEnergy)
-                        original_r=energy_to_range(original_e)
-                        wet=beaminfo["RangeShifters"][0] / 10 #convert mm in cm
-                        #The new range is the original one with the correction:
-                        final_r=original_r-wet
-                        if final_r<=0:
-                            raise ValueError("Invalid negative range value")
-                        final_e=float(range_to_energy(final_r))
-                        icpoi.NominalBeamEnergy = format_number_as_ds(final_e)
                     # icpoi.ReferencedDoseReferenceSequence = Sequence() # Optional
                     # for rdn in range(len(...))
                         # rdrv = Dataset()
