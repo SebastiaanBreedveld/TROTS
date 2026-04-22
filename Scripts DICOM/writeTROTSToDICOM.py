@@ -692,7 +692,7 @@ for folder in caseFolders:
                             final_r = float(original_r)
                             final_e = float(original_e)
                         final_e=float(range_to_energy(final_r))
-                    icpoi.NominalBeamEnergy=format_number_as_ds(final_e)
+                        icpoi.NominalBeamEnergy=format_number_as_ds(final_e)
                     assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
                     if(icpoi.NumberOfScanSpotPositions != 1):
                         totalMetersetWeightOfControlPoints += sum(icpoi.ScanSpotMetersetWeights)
