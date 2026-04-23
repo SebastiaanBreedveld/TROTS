@@ -821,7 +821,7 @@ for folder in caseFolders:
             dose = np.nan_to_num(dose, nan=0.0, posinf=0.0, neginf=0.0)
             max_dose = np.max(dose)
             scaling = max_dose / 65535 if max_dose > 0 else 1.0
-            doseds.DoseGridScaling = scaling
+            doseds.DoseGridScaling = format_number_as_ds(scaling)
             dose_uint16 = (dose / scaling).astype(np.uint16)
             doseds.PixelData = np.swapaxes(dose_uint16, 2, 0).flatten().tobytes()
 
