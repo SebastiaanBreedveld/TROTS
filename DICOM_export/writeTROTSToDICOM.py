@@ -187,7 +187,7 @@ for folder in caseFolders:
 
             ds.PixelData = np.array(np.swapaxes(mat['patient']['CT'][:,:,sliceIndex],0,1)+1024).tobytes()
 
-            ds.save_as(outFolder+'CT_'+str(sliceIndex).zfill(3)+".dcm", write_like_original = False)
+            ds.save_as(outFolder+'CT_'+str(sliceIndex).zfill(3)+".dcm", enforce_file_format = False)
 
         # write RTStruct
         meta = pydicom.Dataset()
@@ -328,7 +328,7 @@ for folder in caseFolders:
                             rc.ContourSequence.append(cont)
             rds.ROIContourSequence.append(rc)
 
-        rds.save_as(outFolder+'rtstruct.dcm', write_like_original = False)
+        rds.save_as(outFolder+'rtstruct.dcm', enforce_file_format = False)
 
         if((folder == 'Protons') and ('beamlistfolder' in locals()) and ('machinedata' in locals())):
             # write rtplan
@@ -758,7 +758,7 @@ for folder in caseFolders:
                 rtds.IonBeamSequence.append(be)
                 totalMetersetWeightOfBeams += be.FinalCumulativeMetersetWeight
             assert(abs(totalMetersetWeightOfBeams - sum(mat["solutionX"])) < MetersetWeightTolerance)
-            rtds.save_as(outFolder+'rtplan.dcm', write_like_original = False)
+            rtds.save_as(outFolder+'rtplan.dcm', enforce_file_format = False)
 
             # write rtdose
             if not args.rtdose or (type(args.rtdose) == str and args.rtdose=='False'):
@@ -881,7 +881,7 @@ for folder in caseFolders:
             dose_uint16 = (dose / scaling).astype(np.uint16)
             doseds.PixelData = np.swapaxes(dose_uint16, 2, 0).flatten().tobytes()
 
-            doseds.save_as(outFolder + 'rtdose.dcm', write_like_original = False)
+            doseds.save_as(outFolder + 'rtdose.dcm', enforce_file_format = False)
 
             beamnrs = [beaminfo["BeamNumber"] for beaminfo in currentbeamlist]
             if args.DoseBeamNumber is None:
@@ -943,7 +943,7 @@ for folder in caseFolders:
                 dose_uint16 = (dose / scaling).astype(np.uint16)
                 bdoseds.PixelData = np.swapaxes(dose_uint16, 2, 0).flatten().tobytes()
                 
-                bdoseds.save_as(outFolder+'rtdose_beam'+str(beamNumber)+'.dcm', write_like_original = False)
+                bdoseds.save_as(outFolder+'rtdose_beam'+str(beamNumber)+'.dcm', enforce_file_format = False)
 
             for controlPointNumber in args.DoseControlPoints:
                 print('Working on rtdose, Beam:'+str(controlPointNumber[0])+' ControlPoint:'+str(controlPointNumber[1])+'...')
@@ -1009,7 +1009,7 @@ for folder in caseFolders:
                 dose_uint16 = (dose / scaling).astype(np.uint16)
                 cpdoseds.PixelData = np.swapaxes(dose_uint16, 2, 0).flatten().tobytes()
 
-                cpdoseds.save_as(outFolder+'rtdose_beam'+str(controlPointNumber[0])+'_CP'+str(controlPointNumber[1])+'.dcm', write_like_original = False)
+                cpdoseds.save_as(outFolder+'rtdose_beam'+str(controlPointNumber[0])+'_CP'+str(controlPointNumber[1])+'.dcm', enforce_file_format = False)
 
         for beamSpotNumber in args.DoseBeamSpots:
                 print('Working on rtdose, Beam:'+str(beamSpotNumber[0])+' ControlPoint:'+str(beamSpotNumber[1])+' BeamSpot:'+str(beamSpotNumber[2])+'...')
@@ -1076,6 +1076,6 @@ for folder in caseFolders:
                 dose_uint16 = (dose / scaling).astype(np.uint16)
                 bsdoseds.PixelData = np.swapaxes(dose_uint16, 2, 0).flatten().tobytes()
 
-                bsdoseds.save_as(outFolder+'rtdose_beam'+str(beamSpotNumber[0])+'_CP'+str(beamSpotNumber[1])+'_SP'+str(beamSpotNumber[2])+'.dcm', write_like_original = False)
+                bsdoseds.save_as(outFolder+'rtdose_beam'+str(beamSpotNumber[0])+'_CP'+str(beamSpotNumber[1])+'_SP'+str(beamSpotNumber[2])+'.dcm', enforce_file_format = False)
 
         print('DICOM files writen to ' + outFolder)
