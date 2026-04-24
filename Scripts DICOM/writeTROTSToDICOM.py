@@ -770,12 +770,10 @@ for folder in caseFolders:
             doseds.Columns = int(db[0][1] - db[0][0] + 1)
             doseds.NumberOfFrames = db[2][1] - db[2][0] + 1
             if useRelativeGridOffset:
-                #case a:
-                print("Using relative grid offsets (case a)")
+                #case a of DICOM C.8.8.3.2 (strongly recommended)
                 doseds.GridFrameOffsetVector = [format_number_as_ds(dz * resolution[2])for dz in range(doseds.NumberOfFrames)]
             else:
-                #case b
-                print("Using absolute patient Z coordinates")
+                #case b of DICOM C.8.8.3.2
                 doseds.GridFrameOffsetVector = [format_number_as_ds(doseds.ImagePositionPatient[2] + dz * resolution[2])for dz in range(doseds.NumberOfFrames)]
             doseds.PixelSpacing = ds.PixelSpacing
             doseds.BitsAllocated = ds.BitsAllocated
