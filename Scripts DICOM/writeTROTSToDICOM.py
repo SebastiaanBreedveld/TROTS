@@ -34,12 +34,31 @@ parser.add_argument("-c", "--DoseControlPoints", type=list, nargs='?', help="A l
 parser.add_argument("-s", "--DoseBeamSpots", type=list, nargs='?', help="A list of beam spot numbers where the rtdose_<BeamNumber>_<ControlPointNumber>_<BeamSpotNumber>.dcm is calculated, format: [(BeamNumber_i,ControlPoint_i,BeamSpotNumber_i), ...]", default=[])
 parser.add_argument("--DoseBoxLikeCT", nargs='?', help="Set to true to override the clipped dose box defined by TROTS and use instead the full CT as dose grid. Needed so that TROTSViewDVHs MATLAB script matches with DVHs computed from DICOM by e.g. SlicerRT.", default=False)
 parser.add_argument("--useRelativeGridOffset",nargs='?',help="Set to True to use relative Grid Frame Offset Vector (case a of Grid Frame Offset Vector Attribute in DICOM standard, see section C.8.8.3.2, strongly recommended)",default=True)
+parser.add_argument("--hideRangeShifter", nargs='?',help="Set to True to remove the physical Range Shifter and change the energy instead based on the water equivalent thickness",default=False)
 
 args = parser.parse_args()
 
 pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
 
+#Reading NIST file using the package nist-calculators
+from star import ProtonSTARCalculator, ProtonMaterials
+def loadnistdata():
+    material = ProtonMaterials.WATER_LIQUID
+    calculator = ProtonSTARCalculator(material)
+    table = calculator.calculate_table()
+    energies=table['energy']
+    ranges=table['csda_range']
+    return np.array(energies), np.array(ranges)
+                
+nist_energy, nist_range = loadnistdata()
+
+#Functions to convert energy to range and viceversa
+from scipy.interpolate import interp1d
+energy_to_range = interp1d(nist_energy, nist_range, kind='cubic', fill_value="extrapolate")
+range_to_energy = interp1d(nist_range, nist_energy, kind='cubic', fill_value="extrapolate")
+hideRangeShifter = args.hideRangeShifter if type(args.hideRangeShifter) == bool else args.hideRangeShifter == "True"
 useRelativeGridOffset = args.useRelativeGridOffset if type(args.useRelativeGridOffset) == bool else args.useRelativeGridOffset == "True"
+
 caseFolders = ['Prostate_CK', 'Head-and-Neck', 'Protons', 'Liver', 'Prostate_BT', 'Prostate_VMAT', 'Head-and-Neck-Alt']
 for folder in caseFolders:
     try:
@@ -588,7 +607,7 @@ for folder in caseFolders:
                 be.FinalCumulativeMetersetWeight = format_number_as_ds(beaminfo["FinalCumulativeMetersetWeight"])
                 be.ScanMode                   = 'MODULATED'
                 be.VirtualSourceAxisDistances = SAD
-                if(len(beaminfo["RangeShifters"]) ==0):
+                if hideRangeShifter or (len(beaminfo["RangeShifters"]) ==0):
                     be.NumberOfRangeShifters = 0
                 else:
                     numberOfRangeShifters = len(beaminfo["RangeShifters"])
@@ -655,14 +674,26 @@ for folder in caseFolders:
                     sigma2 = np.interp(controlpointinfo["BeamEnergy"],beamSigmaEnergy[:][1], beamSigmas[:][1])
                     icpoi.ScanningSpotSize = [sigma1,sigma2]
                     icpoi.NumberOfPaintings = 1
-                    if((beaminfo["ConstantRangeShifter"]==False) or ((controlpointinfo["ControlPointNumber"]==0) and (controlpointinfo["RangeShifter"]!=0))):
-                        icpoi.RangeShifterSettingsSequence = Sequence()
-                        for RSindex in range(numberOfRangeShifters):
-                           rsSettings = Dataset()
-                           rsSettings.RangeShifterSetting = "OUT" if(controlpointinfo["RangeShifter"]==0) else "IN"
-                           rsSettings.RangeShifterWaterEquivalentThickness = beaminfo["RangeShifters"][RSindex]
-                           rsSettings.ReferencedRangeShifterNumber = RSindex
-                        icpoi.RangeShifterSettingsSequence.append(rsSettings)
+                    if hideRangeShifter==False: #Range Shifter unhidden
+                        if((beaminfo["ConstantRangeShifter"]==False) or ((controlpointinfo["ControlPointNumber"]==0) and (controlpointinfo["RangeShifter"]!=0))):
+                            icpoi.RangeShifterSettingsSequence = Sequence()
+                            for RSindex in range(numberOfRangeShifters):
+                                rsSettings = Dataset()
+                                rsSettings.RangeShifterSetting = "OUT" if(controlpointinfo["RangeShifter"]==0) else "IN"
+                                rsSettings.RangeShifterWaterEquivalentThickness = beaminfo["RangeShifters"][RSindex]
+                                rsSettings.ReferencedRangeShifterNumber = RSindex
+                            icpoi.RangeShifterSettingsSequence.append(rsSettings)
+
+                    if hideRangeShifter and controlpointinfo["RangeShifter"] != 0: 
+                        original_e=float(icpoi.NominalBeamEnergy)
+                        original_r=energy_to_range(original_e)
+                        wet=beaminfo["RangeShifters"][0]/10
+                        final_r=original_r-wet
+                        if final_r<=0:
+                            final_r = float(original_r)
+                            final_e = float(original_e)
+                        final_e=float(range_to_energy(final_r))
+                        icpoi.NominalBeamEnergy=format_number_as_ds(final_e)
                     assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
                     if(icpoi.NumberOfScanSpotPositions != 1):
                         totalMetersetWeightOfControlPoints += sum(icpoi.ScanSpotMetersetWeights)
@@ -687,18 +718,35 @@ for folder in caseFolders:
                     icpoi.ScanSpotMetersetWeights = [0.0 for i in range(len(controlpointinfo["MetersetWeights"]))]
                     icpoi.ScanningSpotSize = [sigma1,sigma2]
                     icpoi.NumberOfPaintings = 1
-                    if(beaminfo["ConstantRangeShifter"]==False):
-                        icpoi.RangeShifterSettingsSequence = Sequence()
-                        rsSettings = Dataset()
-                        if(controlpointinfo["RangeShifter"]==0):
-                            rsSettings.RangeShifterSetting = "OUT"
-                            rsSettings.RangeShifterWaterEquivalentThickness = beaminfo["RangeShifters"][0]
-                            rsSettings.ReferencedRangeShifterNumber = 0
-                        else:
-                            rsSettings.RangeShifterSetting = "IN"
-                            rsSettings.RangeShifterWaterEquivalentThickness = controlpointinfo["RangeShifter"]
-                            rsSettings.ReferencedRangeShifterNumber = beaminfo["RangeShifters"].index(controlpointinfo["RangeShifter"])
-                        icpoi.RangeShifterSettingsSequence.append(rsSettings)
+                    if hideRangeShifter==False:
+                        if(beaminfo["ConstantRangeShifter"]==False):
+                            icpoi.RangeShifterSettingsSequence = Sequence()
+                            rsSettings = Dataset()
+                            if(controlpointinfo["RangeShifter"]==0):
+                                rsSettings.RangeShifterSetting = "OUT"
+                                rsSettings.RangeShifterWaterEquivalentThickness = beaminfo["RangeShifters"][0]
+                                rsSettings.ReferencedRangeShifterNumber = 0
+                            else:
+                                rsSettings.RangeShifterSetting = "IN"
+                                rsSettings.RangeShifterWaterEquivalentThickness = controlpointinfo["RangeShifter"]
+                                rsSettings.ReferencedRangeShifterNumber = beaminfo["RangeShifters"].index(controlpointinfo["RangeShifter"])
+                            icpoi.RangeShifterSettingsSequence.append(rsSettings)
+
+                
+                    if  hideRangeShifter and controlpointinfo["RangeShifter"]!=0:
+                        original_e=float(icpoi.NominalBeamEnergy)
+                        original_r=energy_to_range(original_e)
+                        wet=beaminfo["RangeShifters"][0] / 10 #convert mm in cm
+                        #The new range is the original one with the correction:
+                        final_r=original_r-wet
+                        if final_r<=0:
+                            raise ValueError("Invalid negative range value")
+                        final_e=float(range_to_energy(final_r))
+                        icpoi.NominalBeamEnergy = format_number_as_ds(final_e)
+                        
+
+                        
+                        
                     assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
                     if(icpoi.NumberOfScanSpotPositions != 1):
                         totalMetersetWeightOfControlPoints += sum(icpoi.ScanSpotMetersetWeights)
