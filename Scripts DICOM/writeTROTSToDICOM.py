@@ -33,7 +33,7 @@ parser.add_argument("-n", "--DoseBeamNumber", type=list, nargs='?', help="A list
 parser.add_argument("-c", "--DoseControlPoints", type=list, nargs='?', help="A list of control point numbers where a separate rtdose_<BeamNumber>_<ControlPointNumber>.dcm is calculated, format: [(BeamNumber_i,ControlPoint_i), ...]", default=[])
 parser.add_argument("-s", "--DoseBeamSpots", type=list, nargs='?', help="A list of beam spot numbers where the rtdose_<BeamNumber>_<ControlPointNumber>_<BeamSpotNumber>.dcm is calculated, format: [(BeamNumber_i,ControlPoint_i,BeamSpotNumber_i), ...]", default=[])
 parser.add_argument("--DoseBoxLikeCT", nargs='?', help="Set to true to override the clipped dose box defined by TROTS and use instead the full CT as dose grid. Needed so that TROTSViewDVHs MATLAB script matches with DVHs computed from DICOM by e.g. SlicerRT.", default=False)
-parser.add_argument("--useRelativeGridOffset",nargs='?',help="Set to True to use relative Grid Frame Offset Vector (case a of Grid Frame Offset Vector Attribute in Innolitics)",default=False)
+parser.add_argument("--useRelativeGridOffset",nargs='?',help="Set to True to use relative Grid Frame Offset Vector (case a of Grid Frame Offset Vector Attribute in DICOM standard, see section C.8.8.3.2, strongly recommended)",default=True)
 
 args = parser.parse_args()
 
