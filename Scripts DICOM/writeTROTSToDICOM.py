@@ -33,12 +33,12 @@ parser.add_argument("-n", "--DoseBeamNumber", type=list, nargs='?', help="A list
 parser.add_argument("-c", "--DoseControlPoints", type=list, nargs='?', help="A list of control point numbers where a separate rtdose_<BeamNumber>_<ControlPointNumber>.dcm is calculated, format: [(BeamNumber_i,ControlPoint_i), ...]", default=[])
 parser.add_argument("-s", "--DoseBeamSpots", type=list, nargs='?', help="A list of beam spot numbers where the rtdose_<BeamNumber>_<ControlPointNumber>_<BeamSpotNumber>.dcm is calculated, format: [(BeamNumber_i,ControlPoint_i,BeamSpotNumber_i), ...]", default=[])
 parser.add_argument("--DoseBoxLikeCT", nargs='?', help="Set to true to override the clipped dose box defined by TROTS and use instead the full CT as dose grid. Needed so that TROTSViewDVHs MATLAB script matches with DVHs computed from DICOM by e.g. SlicerRT.", default=False)
+parser.add_argument("--useRelativeGridOffset",nargs='?',help="Set to True to use relative Grid Frame Offset Vector (case a of Grid Frame Offset Vector Attribute in DICOM standard, see section C.8.8.3.2, strongly recommended)",default=True)
 parser.add_argument("--hideRangeShifter", nargs='?',help="Set to True to remove the physical Range Shifter and change the energy instead based on the water equivalent thickness",default=False)
 
 args = parser.parse_args()
 
 pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
-
 
 #Reading NIST file using the package nist-calculators
 from star import ProtonSTARCalculator, ProtonMaterials
@@ -57,6 +57,7 @@ from scipy.interpolate import interp1d
 energy_to_range = interp1d(nist_energy, nist_range, kind='cubic', fill_value="extrapolate")
 range_to_energy = interp1d(nist_range, nist_energy, kind='cubic', fill_value="extrapolate")
 hideRangeShifter = args.hideRangeShifter if type(args.hideRangeShifter) == bool else args.hideRangeShifter == "True"
+useRelativeGridOffset = args.useRelativeGridOffset if type(args.useRelativeGridOffset) == bool else args.useRelativeGridOffset == "True"
 
 caseFolders = ['Prostate_CK', 'Head-and-Neck', 'Protons', 'Liver', 'Prostate_BT', 'Prostate_VMAT', 'Head-and-Neck-Alt']
 for folder in caseFolders:
@@ -816,7 +817,12 @@ for folder in caseFolders:
             doseds.Rows = int(db[1][1] - db[1][0] + 1)
             doseds.Columns = int(db[0][1] - db[0][0] + 1)
             doseds.NumberOfFrames = db[2][1] - db[2][0] + 1
-            doseds.GridFrameOffsetVector = [format_number_as_ds(doseds.ImagePositionPatient[2] + dz*resolution[2]) for dz in range(doseds.NumberOfFrames)]
+            if useRelativeGridOffset:
+                #case a of DICOM C.8.8.3.2 (strongly recommended)
+                doseds.GridFrameOffsetVector = [format_number_as_ds(dz * resolution[2])for dz in range(doseds.NumberOfFrames)]
+            else:
+                #case b of DICOM C.8.8.3.2
+                doseds.GridFrameOffsetVector = [format_number_as_ds(doseds.ImagePositionPatient[2] + dz * resolution[2])for dz in range(doseds.NumberOfFrames)]
             doseds.PixelSpacing = ds.PixelSpacing
             doseds.BitsAllocated = ds.BitsAllocated
             doseds.BitsStored = ds.BitsStored
