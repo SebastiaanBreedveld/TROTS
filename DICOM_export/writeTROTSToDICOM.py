@@ -670,8 +670,12 @@ for folder in caseFolders:
                     icpoi.NumberOfScanSpotPositions = len(controlpointinfo["MetersetWeights"])
                     icpoi.ScanSpotPositionMap = controlpointinfo["ScanSpotPositions"]
                     icpoi.ScanSpotMetersetWeights = controlpointinfo["MetersetWeights"]
-                    sigma1 = np.interp(controlpointinfo["BeamEnergy"],beamSigmaEnergy[:][0], beamSigmas[:][0])
-                    sigma2 = np.interp(controlpointinfo["BeamEnergy"],beamSigmaEnergy[:][1], beamSigmas[:][1])
+                    #indx gives the index where the energy from beamSigmaEnergy matches with "BeamEnergy"
+                    indx = np.abs(beamSigmaEnergy[:, 0] - controlpointinfo["BeamEnergy"]).argmin()
+                    sigma1 = np.interp(controlpointinfo["BeamEnergy"],beamSigmaEnergy[:,0], beamSigmas[:,0])
+                    #the matching range for the given energy
+                    current_range =beamSigmaEnergy[indx, 1]
+                    sigma2 = np.interp(current_range, beamSigmaEnergy[:, 1], beamSigmas[:, 1]) 
                     icpoi.ScanningSpotSize = [sigma1,sigma2]
                     icpoi.NumberOfPaintings = 1
                     if hideRangeShifter==False: #Range Shifter unhidden
