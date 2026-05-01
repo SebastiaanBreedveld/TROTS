@@ -44,12 +44,11 @@ pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
 from scipy.interpolate import interp1d
 
 def get_range_from_energy(energy_target, table):
+   """
+    Converts energy to range using linear interpolation.
     """
-    Looks for the range in water corresponding to a given energy level
-    by extracting it directly from the table.
-    """
-    idx = np.abs(table[:, 0] - energy_target).argmin()
-    return table[idx, 1]
+    f = interp1d(table[:, 0], table[:, 1], kind='linear', fill_value="extrapolate")
+    return float(f(energy_target))
 
 def get_energy_from_range(range_target, table):
     """
