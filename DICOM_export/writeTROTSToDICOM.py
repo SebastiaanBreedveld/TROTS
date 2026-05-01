@@ -53,11 +53,10 @@ def get_range_from_energy(energy_target, table):
 
 def get_energy_from_range(range_target, table):
     """
-    Looks for the energy corresponding to a given range in water
-    by extracting it directly from the table.
+    Converts range to energy using linear interpolation.
     """
-    idx = np.abs(table[:, 1] - range_target).argmin()
-    return table[idx, 0]
+    f = interp1d(table[:, 1], table[:, 0], kind='linear', fill_value="extrapolate")
+    return float(f(range_target))
 
 hideRangeShifter = args.hideRangeShifter if type(args.hideRangeShifter) == bool else args.hideRangeShifter == "True"
 useRelativeGridOffset = args.useRelativeGridOffset if type(args.useRelativeGridOffset) == bool else args.useRelativeGridOffset == "True"
