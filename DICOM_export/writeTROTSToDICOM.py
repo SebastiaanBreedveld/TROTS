@@ -40,22 +40,25 @@ args = parser.parse_args()
 
 pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
 
-#Reading NIST file using the package nist-calculators
-from star import ProtonSTARCalculator, ProtonMaterials
-def loadnistdata():
-    material = ProtonMaterials.WATER_LIQUID
-    calculator = ProtonSTARCalculator(material)
-    table = calculator.calculate_table()
-    energies=table['energy']
-    ranges=table['csda_range']
-    return np.array(energies), np.array(ranges)
-                
-nist_energy, nist_range = loadnistdata()
-
 #Functions to convert energy to range and viceversa
 from scipy.interpolate import interp1d
-energy_to_range = interp1d(nist_energy, nist_range, kind='cubic', fill_value="extrapolate")
-range_to_energy = interp1d(nist_range, nist_energy, kind='cubic', fill_value="extrapolate")
+
+def get_range_from_energy(energy_target, table):
+    """
+    Looks for the range in water corresponding to a given energy level
+    by extracting it directly from the table.
+    """
+    idx = np.abs(table[:, 0] - energy_target).argmin()
+    return table[idx, 1]
+
+def get_energy_from_range(range_target, table):
+    """
+    Looks for the energy corresponding to a given range in water
+    by extracting it directly from the table.
+    """
+    idx = np.abs(table[:, 1] - range_target).argmin()
+    return table[idx, 0]
+
 hideRangeShifter = args.hideRangeShifter if type(args.hideRangeShifter) == bool else args.hideRangeShifter == "True"
 useRelativeGridOffset = args.useRelativeGridOffset if type(args.useRelativeGridOffset) == bool else args.useRelativeGridOffset == "True"
 
@@ -686,13 +689,13 @@ for folder in caseFolders:
 
                     if hideRangeShifter and controlpointinfo["RangeShifter"] != 0: 
                         original_e=float(icpoi.NominalBeamEnergy)
-                        original_r=energy_to_range(original_e)
+                        original_r = get_range_from_energy(original_e, beamSigmaEnergy)
                         wet=beaminfo["RangeShifters"][0]/10
                         final_r=original_r-wet
                         if final_r<=0:
                             final_r = float(original_r)
                             final_e = float(original_e)
-                        final_e=float(range_to_energy(final_r))
+                        final_e = float(get_energy_from_range(final_r, beamSigmaEnergy))
                         icpoi.NominalBeamEnergy=format_number_as_ds(final_e)
                     assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
                     if(icpoi.NumberOfScanSpotPositions != 1):
@@ -735,13 +738,13 @@ for folder in caseFolders:
                 
                     if  hideRangeShifter and controlpointinfo["RangeShifter"]!=0:
                         original_e=float(icpoi.NominalBeamEnergy)
-                        original_r=energy_to_range(original_e)
+                        original_r = get_range_from_energy(original_e, beamSigmaEnergy)
                         wet=beaminfo["RangeShifters"][0] / 10 #convert mm in cm
                         #The new range is the original one with the correction:
                         final_r=original_r-wet
                         if final_r<=0:
                             raise ValueError("Invalid negative range value")
-                        final_e=float(range_to_energy(final_r))
+                        final_e = float(get_energy_from_range(final_r, beamSigmaEnergy))
                         icpoi.NominalBeamEnergy = format_number_as_ds(final_e)
                         
 
