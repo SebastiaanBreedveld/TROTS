@@ -334,7 +334,7 @@ for folder in caseFolders:
         if((folder == 'Protons') and ('beamlistfolder' in locals()) and ('machinedata' in locals())):
             # write rtplan
             print('Working on rtplan...')
-            beamSigmaEnergy = machinedata["BeamInfo"]["EnergyRangeList"]
+            energyRangeTable = machinedata["BeamInfo"]["EnergyRangeList"]
             beamSigmas = machinedata["BeamInfo"]["Sigma"]
             SAD = [machinedata["BeamInfo"]["SAD"][0],machinedata["BeamInfo"]["SAD"][1]]
             meta = pydicom.Dataset()
@@ -671,8 +671,8 @@ for folder in caseFolders:
                     icpoi.NumberOfScanSpotPositions = len(controlpointinfo["MetersetWeights"])
                     icpoi.ScanSpotPositionMap = controlpointinfo["ScanSpotPositions"]
                     icpoi.ScanSpotMetersetWeights = controlpointinfo["MetersetWeights"]
-                    sigma1 = np.interp(controlpointinfo["BeamEnergy"], beamSigmaEnergy[:, 0], beamSigmas[:, 0])
-                    sigma2 = np.interp(controlpointinfo["BeamEnergy"], beamSigmaEnergy[:, 0], beamSigmas[:, 1])
+                    sigma1 = np.interp(controlpointinfo["BeamEnergy"], energyRangeTable[:, 0], beamSigmas[:, 0])
+                    sigma2 = np.interp(controlpointinfo["BeamEnergy"], energyRangeTable[:, 0], beamSigmas[:, 1])
                     icpoi.ScanningSpotSize = [sigma1,sigma2]
                     icpoi.NumberOfPaintings = 1
                     if hideRangeShifter==False: #Range Shifter unhidden
@@ -687,13 +687,13 @@ for folder in caseFolders:
 
                     if hideRangeShifter and controlpointinfo["RangeShifter"] != 0: 
                         original_e=float(icpoi.NominalBeamEnergy)
-                        original_r = get_range_from_energy(original_e, beamSigmaEnergy)
+                        original_r = get_range_from_energy(original_e, energyRangeTable)
                         wet=beaminfo["RangeShifters"][0]/10
                         final_r=original_r-wet
                         if final_r<=0:
                             final_r = float(original_r)
                             final_e = float(original_e)
-                        final_e = float(get_energy_from_range(final_r, beamSigmaEnergy))
+                        final_e = float(get_energy_from_range(final_r, energyRangeTable))
                         icpoi.NominalBeamEnergy=format_number_as_ds(final_e)
                     assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
                     if(icpoi.NumberOfScanSpotPositions != 1):
@@ -736,13 +736,13 @@ for folder in caseFolders:
                 
                     if  hideRangeShifter and controlpointinfo["RangeShifter"]!=0:
                         original_e=float(icpoi.NominalBeamEnergy)
-                        original_r = get_range_from_energy(original_e, beamSigmaEnergy)
+                        original_r = get_range_from_energy(original_e, energyRangeTable)
                         wet=beaminfo["RangeShifters"][0] / 10 #convert mm in cm
                         #The new range is the original one with the correction:
                         final_r=original_r-wet
                         if final_r<=0:
                             raise ValueError("Invalid negative range value")
-                        final_e = float(get_energy_from_range(final_r, beamSigmaEnergy))
+                        final_e = float(get_energy_from_range(final_r, energyRangeTable))
                         icpoi.NominalBeamEnergy = format_number_as_ds(final_e)
                         
 
