@@ -1075,9 +1075,9 @@ for folder in caseFolders:
                             continue
 
                         if(matrix["A"].shape[0]==mat["patient"]["SampledVoxels"][structIdx].shape[1]):
-                            SampledDosePart = matrix["A"][:,idx]*mat["solutionX"][idx] + matrix["b"]
+                            SampledDosePart = matrix["A"][:,idx]*mat["solutionX"][idx:idx+1] + matrix["b"]
                         elif (((matrix["A"].shape[0] % 9)==0) and (matrix["A"].shape[0]/9==mat["patient"]["SampledVoxels"][structIdx].shape[1])):
-                            SampledDosePart = matrix["A"][:int(matrix["A"].shape[0]/9)][:,idx]*mat["solutionX"][idx] + matrix["b"]
+                            SampledDosePart = matrix["A"][:int(matrix["A"].shape[0]/9)][:,idx]*mat["solutionX"][idx:idx+1] + matrix["b"]
                         else:
                             raise ValueError("")
 
