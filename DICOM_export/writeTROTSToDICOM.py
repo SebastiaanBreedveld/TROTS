@@ -1099,7 +1099,7 @@ for folder in caseFolders:
                 bsdoseds.DoseGridScaling = scaling
                 dose_uint16 = (dose / scaling).astype(np.uint16)
                 bsdoseds.PixelData = np.swapaxes(dose_uint16, 2, 0).flatten().tobytes()
-subfolder_path = os.path.join(outFolder, f"RTDose_Beam{beamSpotNumber[0]}_CP{beamSpotNumber[1]}")
+                subfolder_path = os.path.join(outFolder, f"RTDose_Beam{beamSpotNumber[0]}_CP{beamSpotNumber[1]}")
                 os.makedirs(subfolder_path, exist_ok=True)
 
                 filename = f"rtdose_beam{beamSpotNumber[0]}_CP{beamSpotNumber[1]}_SP{beamSpotNumber[2]}.dcm"
