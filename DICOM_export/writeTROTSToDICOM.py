@@ -1108,6 +1108,6 @@ for folder in caseFolders:
                 if int(pydicom.__version_info__[0]) >= 3:
                     bsdoseds.save_as(full_save_path, enforce_file_format=True)
                 else:
-                    cpdoseds.save_as(full_save_path, write_like_original=False)
+                    bsdoseds.save_as(full_save_path, write_like_original=False)
 
         print('DICOM files writen to ' + outFolder)
