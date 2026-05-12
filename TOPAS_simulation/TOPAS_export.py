@@ -211,7 +211,7 @@ sv:Ge/Patient/DicomModalityTags = 1 "CT"
 ####################################################
 s:Sc/RTDose/Quantity    = "DoseToWater"
 s:Sc/RTDose/Component   = "Patient/RTDoseGrid" 
-#s:Sc/RTDose/OutputFile="Dw_patient_PPH10"
+#s:Sc/RTDose/OutputFile="Dw_patient_PPH{args.ParticlesPerHistory}"
 s:Sc/RTDose/OutputType  = "binary" 
 s:Sc/RTDose/IfOutputFileAlreadyExists = "OverWrite" # Exit, Overwrite or Increment
 b:Sc/RTDose/PreCalculateStoppingPowerRatios = "True"
