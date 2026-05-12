@@ -13,7 +13,6 @@
 
 includeFile = /TOPAS_simulation/Protons_01/plan.txt
 
-includeFile=Protons_01/Beam_1/inputs.txt
 i:Ts/MaxInterruptedHistories = 1000
 
 ###################################################
