@@ -1099,7 +1099,6 @@ for folder in caseFolders:
                 bsdoseds.DoseGridScaling = scaling
                 dose_uint16 = (dose / scaling).astype(np.uint16)
                 bsdoseds.PixelData = np.swapaxes(dose_uint16, 2, 0).flatten().tobytes()
-                if int(pydicom.__version_info__[0]) >= 3:
 subfolder_path = os.path.join(outFolder, f"RTDose_Beam{beamSpotNumber[0]}_CP{beamSpotNumber[1]}")
                 os.makedirs(subfolder_path, exist_ok=True)
 
