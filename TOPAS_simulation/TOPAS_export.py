@@ -357,6 +357,11 @@ for patient_folder in os.listdir(args.inputPath):
 
                 with open(os.path.join(patient_folder_path, "plan.txt"), "w", encoding="utf-8") as f:
                     f.write(f"""
+
+##################################################
+#This file is copied from https://github.com/topasmc/dicom-interface/tree/master/rti/topas/tutorial
+###################################################
+
 includeFile = {ppal_path}/beam.txt
 
 ####################################################
