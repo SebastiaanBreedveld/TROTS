@@ -2,7 +2,6 @@
 #Inside the specified output directory, a folder for each patient will be created, and inside this folder the folders for each beam, and inside each beam folder, the files for each control point with the correct number of scan spots to simulate will be created.
 
 
-#In order to compile the complete rtplan, uncomment the line s:Sc/RTDose/OutputFile="Dw_patient"
 
 import os
 import argparse
