@@ -1102,6 +1102,15 @@ for folder in caseFolders:
                 if int(pydicom.__version_info__[0]) >= 3:
                     bsdoseds.save_as(outFolder+'rtdose_beam'+str(beamSpotNumber[0])+'_CP'+str(beamSpotNumber[1])+'_SP'+str(beamSpotNumber[2])+'.dcm', enforce_file_format = True)
                 else:
-                    bsdoseds.save_as(outFolder+'rtdose_beam'+str(beamSpotNumber[0])+'_CP'+str(beamSpotNumber[1])+'_SP'+str(beamSpotNumber[2])+'.dcm', write_like_original = False)
+subfolder_path = os.path.join(outFolder, f"RTDose_Beam{beamSpotNumber[0]}_CP{beamSpotNumber[1]}")
+                os.makedirs(subfolder_path, exist_ok=True)
+
+                filename = f"rtdose_beam{beamSpotNumber[0]}_CP{beamSpotNumber[1]}_SP{beamSpotNumber[2]}.dcm"
+                full_save_path = os.path.join(subfolder_path, filename)
+
+                if int(pydicom.__version_info__[0]) >= 3:
+                    cpdoseds.save_as(full_save_path, enforce_file_format=True)
+                else:
+                    cpdoseds.save_as(full_save_path, write_like_original=False)
 
         print('DICOM files writen to ' + outFolder)
