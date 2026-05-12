@@ -1100,7 +1100,6 @@ for folder in caseFolders:
                 dose_uint16 = (dose / scaling).astype(np.uint16)
                 bsdoseds.PixelData = np.swapaxes(dose_uint16, 2, 0).flatten().tobytes()
                 if int(pydicom.__version_info__[0]) >= 3:
-                    bsdoseds.save_as(outFolder+'rtdose_beam'+str(beamSpotNumber[0])+'_CP'+str(beamSpotNumber[1])+'_SP'+str(beamSpotNumber[2])+'.dcm', enforce_file_format = True)
 subfolder_path = os.path.join(outFolder, f"RTDose_Beam{beamSpotNumber[0]}_CP{beamSpotNumber[1]}")
                 os.makedirs(subfolder_path, exist_ok=True)
 
