@@ -504,7 +504,6 @@ b:Sc/RTDose/OutputToConsole = "FALSE"
                         if i % 2 == 0 and hasattr(cp, "NumberOfScanSpotPositions") : #hasattr() takes as arguments an object and the name of an attribute, returns True if the object contains that attribute
                             numb_scanspots.append(cp.NumberOfScanSpotPositions)
                     
-                    ppal_path = get_linuxpath(args.OutputPath) #We need to go up two levels to get the path where plan_hu.txt is located, which is needed to compile the run_CPX txt files
 
                     acc=0
                     for i, num_spots in enumerate(numb_scanspots):
