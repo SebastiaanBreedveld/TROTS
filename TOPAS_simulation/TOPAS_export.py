@@ -252,9 +252,9 @@ b:Sc/RTDose/OutputToConsole = "FALSE"
                         output_name = f"Dw_patient_CP{cp_id}"
                         full_path = os.path.join(beam_folder_path ,file_name)
                         with open(full_path, "w", encoding="utf-8") as f:
-                            f.write(f"includeFile={ppal_path}/plan_hu.txt\n")
-                            f.write(f"s:Sc/RTDose/OutputFile = \"{output_name}\"\n")
-                            f.write(f"iv:So/RTION/BeamletRange = 2 {start} {end}\n")
+                            f.write(f"""includeFile={ppal_path}/plan_hu.txt\n
+                            s:Sc/RTDose/OutputFile = \"{output_name}\"\n
+                            iv:So/RTION/BeamletRange = 2 {start} {end}\n""")
                                                 
                         acc += num_spots
 
