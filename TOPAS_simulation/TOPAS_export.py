@@ -498,6 +498,11 @@ b:Sc/RTDose/OutputToConsole = "FALSE"
                         u:Rt/RTION/ParticlesPerHistory = {args.ParticlesperHistory}\n
                         i:Rt/RTION/BeamNumberToBeSimulated = {beam_number}\n""")
 
+                    #Lets also create one txt that compiles all of the control poins
+                    with open(os.path.join(beam_folder_path, "run_all.txt"), "w", encoding="utf-8") as f:
+                        f.write(f"""includeFile={ppal_path}/plan_hu.txt\n
+                            s:Sc/RTDose/OutputFile = \"Dw_patient_PPH{args.ParticlesperHistory}\"\n
+                            """)
                     #Now for each control point, we will extract the number of scan spots and save it in a list, which we will use later to create the files for each control point with the correct number of scan spots
                     numb_scanspots = []
                     for i, cp in enumerate(beam.IonControlPointSequence):
