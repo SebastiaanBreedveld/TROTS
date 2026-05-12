@@ -1106,7 +1106,7 @@ for folder in caseFolders:
                 full_save_path = os.path.join(subfolder_path, filename)
 
                 if int(pydicom.__version_info__[0]) >= 3:
-                    cpdoseds.save_as(full_save_path, enforce_file_format=True)
+                    bsdoseds.save_as(full_save_path, enforce_file_format=True)
                 else:
                     cpdoseds.save_as(full_save_path, write_like_original=False)
 
