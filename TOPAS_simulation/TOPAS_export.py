@@ -492,11 +492,11 @@ b:Sc/RTDose/OutputToConsole = "FALSE"
                     patient_path_linux = convert_path_format(patient_path)
 
                     with open(os.path.join(beam_folder_path, "inputs.txt"), "w", encoding="utf-8") as f:
-                        f.write(f"s:Rt/RTION/PlanFile = \"{patient_path_linux}/rtplan.dcm\"\n")
-                        f.write(f"s:Rt/RTION/RTDoseFile = \"{patient_path_linux}/rtdose.dcm\"\n")
-                        f.write(f"s:Rt/RTION/CTDirectory = \"{patient_path_linux}\"\n")
-                        f.write(f"u:Rt/RTION/ParticlesPerHistory = {args.ParticlesperHistory}\n")
-                        f.write(f"i:Rt/RTION/BeamNumberToBeSimulated = {beam_number}\n")
+                        f.write(f"""s:Rt/RTION/PlanFile = \"{patient_path_linux}/rtplan.dcm\"\n
+                        s:Rt/RTION/RTDoseFile = \"{patient_path_linux}/rtdose.dcm\"\n
+                        s:Rt/RTION/CTDirectory = \"{patient_path_linux}\"\n
+                        u:Rt/RTION/ParticlesPerHistory = {args.ParticlesperHistory}\n
+                        i:Rt/RTION/BeamNumberToBeSimulated = {beam_number}\n""")
 
                     #Now for each control point, we will extract the number of scan spots and save it in a list, which we will use later to create the files for each control point with the correct number of scan spots
                     numb_scanspots = []
