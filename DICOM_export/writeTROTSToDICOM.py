@@ -1024,10 +1024,16 @@ for folder in caseFolders:
                 dose_uint16 = (dose / scaling).astype(np.uint16)
                 cpdoseds.PixelData = np.swapaxes(dose_uint16, 2, 0).flatten().tobytes()
 
+                subfolder_path = os.path.join(outFolder, f"RTDose_Beam{controlPointNumber[0]}_CPs")
+                os.makedirs(subfolder_path, exist_ok=True)
+
+                filename = f"rtdose_beam{controlPointNumber[0]}_CP{controlPointNumber[1]}.dcm"
+                full_save_path = os.path.join(subfolder_path, filename)
+
                 if int(pydicom.__version_info__[0]) >= 3:
-                    cpdoseds.save_as(outFolder+'rtdose_beam'+str(controlPointNumber[0])+'_CP'+str(controlPointNumber[1])+'.dcm', enforce_file_format = True)
+                    cpdoseds.save_as(full_save_path, enforce_file_format=True)
                 else:
-                    cpdoseds.save_as(outFolder+'rtdose_beam'+str(controlPointNumber[0])+'_CP'+str(controlPointNumber[1])+'.dcm', write_like_original = False)
+                    cpdoseds.save_as(full_save_path, write_like_original=False)
 
         for beamSpotNumber in args.DoseBeamSpots:
                 print('Working on rtdose, Beam:'+str(beamSpotNumber[0])+' ControlPoint:'+str(beamSpotNumber[1])+' BeamSpot:'+str(beamSpotNumber[2])+'...')
@@ -1093,9 +1099,15 @@ for folder in caseFolders:
                 bsdoseds.DoseGridScaling = scaling
                 dose_uint16 = (dose / scaling).astype(np.uint16)
                 bsdoseds.PixelData = np.swapaxes(dose_uint16, 2, 0).flatten().tobytes()
+                subfolder_path = os.path.join(outFolder, f"RTDose_Beam{beamSpotNumber[0]}_SPs}")
+                os.makedirs(subfolder_path, exist_ok=True)
+
+                filename = f"rtdose_beam{beamSpotNumber[0]}_CP{beamSpotNumber[1]}_SP{beamSpotNumber[2]}.dcm"
+                full_save_path = os.path.join(subfolder_path, filename)
+
                 if int(pydicom.__version_info__[0]) >= 3:
-                    bsdoseds.save_as(outFolder+'rtdose_beam'+str(beamSpotNumber[0])+'_CP'+str(beamSpotNumber[1])+'_SP'+str(beamSpotNumber[2])+'.dcm', enforce_file_format = True)
+                    bsdoseds.save_as(full_save_path, enforce_file_format=True)
                 else:
-                    bsdoseds.save_as(outFolder+'rtdose_beam'+str(beamSpotNumber[0])+'_CP'+str(beamSpotNumber[1])+'_SP'+str(beamSpotNumber[2])+'.dcm', write_like_original = False)
+                    bsdoseds.save_as(full_save_path, write_like_original=False)
 
         print('DICOM files writen to ' + outFolder)
