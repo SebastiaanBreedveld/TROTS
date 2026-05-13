@@ -30,7 +30,7 @@ parser.add_argument("-n", "--numberOfThreads", nargs='?', help="By default, TOPA
 parser.add_argument("-s", "--SID", nargs='?', help="Source to Isocenter Distance", default=39)
 args = parser.parse_args()
 
-#Since Topas has trouble reading Windows directories, we will change the format of the directories to the Linux/WSL one
+#Since Topas has trouble reading Windows directories, we will change the format of the directories to the Linux/WSL one whenever the users system is Windows. 
 def convert_path_format(path):
     if platform.system() == "Windows":
         abs_path = os.path.abspath(path)
