@@ -104,7 +104,7 @@ for patient_folder in os.listdir(args.inputPath):
                     beam_number = beam.BeamNumber
                     beam_folder_path = os.path.join(patient_folder_path, f"Beam_{beam_number}")
                     os.makedirs(beam_folder_path, exist_ok=True)
-                    #Firts we will need to use the path conversion function:
+                    #First we will need to use the path conversion function:
                     patient_path_linux = convert_path_format(patient_path)
                     
                     #Now for each control point, we will extract the number of scan spots and save it in a list, which we will use later to create the files for each control point with the correct number of scan spots
