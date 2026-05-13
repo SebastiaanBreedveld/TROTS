@@ -9,7 +9,7 @@
 
 #In order to simulate the full beamlet Range, use run_all.txt, if you want just one control point (energy layer), choose the correct run_CP#.txt                                
 
-#The specific arguments written in writeTROTStoDICOM.py are the following:
+#The specific arguments used when previously running writeTROTStoDICOM.py are the following:
 #--TreatmentMachineName RBE:1.1 
 #--rtdose True 
 #--hideRangeShifter True 
