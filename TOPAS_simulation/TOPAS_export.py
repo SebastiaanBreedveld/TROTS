@@ -20,6 +20,7 @@
 import os
 import argparse
 from pydicom import dcmread
+import platform
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-o", "--OutputPath", nargs='?', help="The output directory where the TOPAS script files will be written to.", default="/tmp")
