@@ -340,8 +340,8 @@ d:Ge/Patient/RotZ     = 0. deg
 iv:Ge/Patient/ShowSpecificSlicesZ  = 1 1
 b:Ge/Patient/IgnoreInconsistentFrameOfReferenceUID = "True"
 
-b:Ge/Patient/IsVisible = "True"
-s:Ge/Patient/DrawingStyle = "FullWireFrame"
+#b:Ge/Patient/IsVisible = "True"
+#s:Ge/Patient/DrawingStyle = "FullWireFrame"
 sv:Ge/Patient/DicomModalityTags = 1 "CT"
 
 ####################################################
