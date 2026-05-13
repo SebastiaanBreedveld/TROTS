@@ -30,14 +30,17 @@ parser.add_argument("-s", "--SID", nargs='?', help="Source to Isocenter Distance
 args = parser.parse_args()
 
 #Since Topas has trouble reading Windows directories, we will change the format of the directories to the Linux/WSL one
-def convert_path_format(windows_path):
-    abs_path = os.path.abspath(windows_path)
-    path = abs_path.replace('\\', '/')
-    #If the path starts with a drive letter (such as C:), we need to convert it to /mnt/c
-    if ':' in path:
-        drive, rest = path.split(':', 1)
-        path = f"/mnt/{drive.lower()}{rest}"
-    return path
+def convert_path_format(path):
+    if platform.system() == "Windows":
+        abs_path = os.path.abspath(path)
+        path_conv = abs_path.replace('\\', '/')
+        #If the path starts with a drive letter (such as C:), we need to convert it to /mnt/c
+        if ':' in path_conv:
+            drive, rest = path_conv.split(':', 1)
+            path_conv = f"/mnt/{drive.lower()}{rest}"
+        return path_conv
+    else:
+        return path
 
 
 print(f"Input path: {args.inputPath}")
