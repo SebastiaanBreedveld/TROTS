@@ -3,7 +3,7 @@
 #OUTPUT PATH
 #|------Patient Folder
 #       |----Beam Folder
-#             |----beam.txt
+#             |----run_beam.txt
 #             |----run_all.txt
 #             |----run_CP#.txt
 
