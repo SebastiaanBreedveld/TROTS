@@ -14,7 +14,8 @@
 #--hideRangeShifter True 
 #--DoseBoxLikeCT True
 #optional if wanting to compare layer by layer: --DoseControlPoints [((BeamNumber_i,ControlPoint_i))] (using an external code that prints print(f'({beam_number},{cp_id}),') ) 
-#optional if wanting to compare spot by spot: ---> TODO specify here the equivalent thing
+#optional if wanting to compare spot by spot: --DoseBeamSpots [(BeamNumber_i,ControlPoint_i,BeamSpotNumber_i), ...]
+
 
 import os
 import argparse
