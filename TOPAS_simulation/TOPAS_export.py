@@ -80,7 +80,8 @@ for patient_folder in os.listdir(args.inputPath):
                 last_ct = dcmread(last_ct_path)
                 last_ct_coordinates = last_ct.ImagePositionPatient
                 
-                #The coordinates of the image center of each slice have to be calculated taking into account the pixel spacing and the number of voxels in each direction
+                # Since ImagePositionPatient points to a pixel center and not to its corner, 
+                # the coordinates of the image center of each slice have to be calculated taking into account the pixel spacing and the number of voxels in each direction
                 #Since it is the same plan, we can extract the spacing and thickness from the first CT
                 pixel_spacing = first_ct.PixelSpacing 
                 slice_thickness = first_ct.SliceThickness 
