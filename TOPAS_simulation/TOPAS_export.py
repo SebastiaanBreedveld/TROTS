@@ -279,7 +279,6 @@ i:Ts/NumberOfThreads = {args.numberOfThreads}
                     planTemplate=f"""
 #This file is copied from https://github.com/topasmc/dicom-interface/blob/master/rti/topas/tutorial/plan.txt
 
-includeFile=beam.txt
 
 ####################################################
 ##------ Overriding parameters        -----
