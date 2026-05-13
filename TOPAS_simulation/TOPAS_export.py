@@ -173,11 +173,11 @@ d:Ge/IEC_F/TransZ  = 0. mm
 ### 1.180 g/cm3 and 74.0 is used.
 
 #####################################################
-sv:Ma/RS_Lucite/Components =3 "Hydrogen" "Carbon" "Oxygen"
-uv:Ma/RS_Lucite/Fractions  =3 0.080538 0.599848 0.319614
-d:Ma/RS_Lucite/Density     = 1.18 g/cm3
-d:Ma/RS_Lucite/MeanExcitationEnergy=74.0 eV
-s:Ma/RS_Lucite/DefaultColor="grey"
+#sv:Ma/RS_Lucite/Components =3 "Hydrogen" "Carbon" "Oxygen"
+#uv:Ma/RS_Lucite/Fractions  =3 0.080538 0.599848 0.319614
+#d:Ma/RS_Lucite/Density     = 1.18 g/cm3
+#d:Ma/RS_Lucite/MeanExcitationEnergy=74.0 eV
+#s:Ma/RS_Lucite/DefaultColor="grey"
 #3     G4_PLEXIGLASS              1.19              74
 #             1     0.080538
 #             6     0.599848
