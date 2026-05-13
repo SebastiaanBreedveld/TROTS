@@ -6,7 +6,7 @@
 #             |----run_beam.txt
 #             |----run_CP#.txt
 
-#In order to simulate the full beamlet Range, use run_all.txt, if you want just one control point (energy layer), choose the correct run_CP#.txt                                
+#In order to simulate the full beamlet Range, use run_beam.txt, if you want just one control point (energy layer), choose the correct run_CP#.txt, lastly, if you want to run just one scan spot from the energy layer, run_CP#_SP#.txt                             
 
 #The specific arguments used when previously running writeTROTStoDICOM.py are the following:
 #--TreatmentMachineName RBE:1.1 
