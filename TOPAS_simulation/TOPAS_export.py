@@ -243,7 +243,7 @@ s:So/RTION/Component   = "IEC_F"
 s:So/RTION/File        = Rt/RTION/PlanFile 
 i:So/RTION/BeamNumber  = Rt/RTION/BeamNumberToBeSimulated
 #s:So/RTION/BeamName   = Rt/RTION/BeamNameToBeSimulated
-d:So/RTION/SID         = 39.0 cm #source to isocenter distance. 
+d:So/RTION/SID         = {args.SID} cm #source to isocenter distance. 
 
 # Translation w.r.t mother volume
 # ShiftX/Y/Z is RTION source specific parameters
