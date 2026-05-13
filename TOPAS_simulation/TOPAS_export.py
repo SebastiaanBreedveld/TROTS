@@ -60,8 +60,8 @@ for patient_folder in os.listdir(args.inputPath):
                 rtplan = dcmread(plan_file_path)
                 #In order to obtain the Position of the Image Center, we need to read the patient first and last CT
                 #Since not all patients have the same number of CT slices, we will read all the CT files and find the one with the lowest and highest z coordinate, which will correspond to the first and last CT respectively
-                max_ct=1000
-                min_ct=0
+                max_ct=0
+                min_ct=100000
                 
                 for ct_file in os.listdir(patient_path):
                     if ct_file.endswith('.dcm') and ct_file.startswith('CT_'): 
