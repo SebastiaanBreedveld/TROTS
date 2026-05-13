@@ -31,7 +31,7 @@ parser.add_argument("-i", "--inputPath", nargs='?', help="The input directory co
 parser.add_argument("-d", "--ParticlesperHistory", nargs='?', help="Decimation factor of particles in RTplan, or by how much the number of histories is scaled down to have a reasonable computation time", default=1)
 parser.add_argument("-n", "--numberOfThreads", nargs='?', help="By default, TOPAS will occupy just one CPU thread. If set to a positive integer, TOPAS will use that number of threads. If set to 0, TOPAS will use all of your computer’s threads. If set to a negative number, TOPAS will use all BUT this number of threads.", default=1)
 parser.add_argument("-s", "--SID", nargs='?', help="Source to Isocenter Distance / cm", default=39.0)
-parser.add_argument("--CPFiles", nargs='?', help="Set to true to write files for each energy layer (Control Point)", default=False)
+parser.add_argument("--CPFiles", nargs='?', help="Set to true to write files for each energy layer (Control Point)", default=True)
 parser.add_argument("--SPFiles", nargs='?', help="Set to true to write files for each Spot inside each energy layer (Control Point)", default=False)
 
 args = parser.parse_args()
