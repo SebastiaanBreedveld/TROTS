@@ -56,7 +56,7 @@ for patient_folder in os.listdir(args.inputPath):
         for file in os.listdir(patient_path):
             if file.endswith('plan.dcm'):
                 plan_file_path=os.path.join(patient_path, file)
-                #For each beam inside RT Plan, we will create inside --OutputPath, as many folders as beams
+                #For each beam inside RT Plan, we will create inside --OutputPath/PatientID, as many folders as beams
                 rtplan = dcmread(plan_file_path)
                 #In order to obtain the Position of the Image Center, we need to read the patient first and last CT
                 #Since not all patients have the same number of CT slices, we will read all the CT files and find the one with the lowest and highest z coordinate, which will correspond to the first and last CT respectively
