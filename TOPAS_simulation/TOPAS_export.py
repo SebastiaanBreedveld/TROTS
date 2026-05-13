@@ -195,18 +195,6 @@ s:Ge/RTION/File        = Rt/RTION/PlanFile
 i:Ge/RTION/BeamNumber  = Rt/RTION/BeamNumberToBeSimulated 
 s:Ge/RTION/ImgDirectory = Rt/RTION/CTDirectory
 
-#
-#RotCollimator/Gantry/PatientSupport/IEC2DICOM are RTION specific
-d:Ge/RTION/RotCollimator      = 0.0 deg
-d:Ge/RTION/RotGantry          = 0.0 deg
-d:Ge/RTION/RotPatientSupport  = 0.0 deg
-d:Ge/RTION/RotIEC2DICOM       = 0.0 deg
-
-#TransX or ShiftX/TransX?
-d:Ge/RTION/TransX      = 0 mm
-d:Ge/RTION/TransY      = 0 mm
-d:Ge/RTION/TransZ      = 0 mm
-
 #Material information for subcomponent
 s:Ge/RTION/rangeshifter/Material = "RS_Lucite"
 s:Ge/RTION/Block/Material        = "G4_BRASS"
@@ -246,20 +234,8 @@ s:So/RTION/Type        = "TsRTIonSource"
 s:So/RTION/Component   = "IEC_F"
 s:So/RTION/File        = Rt/RTION/PlanFile 
 i:So/RTION/BeamNumber  = Rt/RTION/BeamNumberToBeSimulated
-#s:So/RTION/BeamName   = Rt/RTION/BeamNameToBeSimulated
 d:So/RTION/SID         = {args.SID} cm #source to isocenter distance. 
 
-# Translation w.r.t mother volume
-# ShiftX/Y/Z is RTION source specific parameters
-d:So/RTION/ShiftX = 0.0 mm 
-d:So/RTION/ShiftY =0.0 mm 
-d:So/RTION/ShiftZ = 0.0 mm 
-
-#RotCollimator/Gantry/PatientSupport/IEC2DICOM are RTION specific
-d:So/RTION/RotCollimator      = 0.0 deg 
-d:So/RTION/RotGantry          = 0.0 deg 
-d:So/RTION/RotPatientSupport  = 0.0 deg 
-d:So/RTION/RotIEC2DICOM       = 0.0 deg 
 
 # Changeable parameters set by 'TsRTIonSource'
 dc:So/RTION/IsoCenterX  = 0 mm
@@ -271,6 +247,7 @@ dc:So/RTION/CollimatorAngle     = 0 deg
 dc:So/RTION/Iec2DicomAngle      = 0 deg
 dc:So/RTION/GantryAngle         = 0 deg
 dc:So/RTION/PatientSupportAngle = 0 deg
+d:So/RTION/RotIEC2DICOM       = 0.0 deg 
 
 u:So/RTION/ParticlesPerHistory = Rt/RtION/ParticlesPerHistory
 i:Ts/ShowHistoryCountAtInterval = 10000
@@ -283,34 +260,12 @@ i:Ts/NumberOfThreads = {args.numberOfThreads}
                     planTemplate=f"""
 #This file is copied from https://github.com/topasmc/dicom-interface/blob/master/rti/topas/tutorial/plan.txt
 
-
-####################################################
-##------ Overriding parameters        -----
-####################################################
-
-Ge/World/HLX = 110.0 cm
-Ge/World/HLY = 110.0 cm
-Ge/World/HLZ = 110.0 cm
-Ge/World/Material = "Air"
-
-####################################################
-##------ RTION as layered mass geometry        -----
-####################################################
-#sv:Ph/Default/LayeredMassGeometryWorlds = 1 "RTION" 
-
-####################################################
-#----------------- RTIonComponent ------------------
-####################################################
-# RTION geometry is parallel
-Ge/RTION/IsParallel     = "F"
-
 # ---
 # 1. Patient CT to calculate 
 # Image center in Patient DICOM coordinate system
 # Iso center in Patient DICOM coordinate 
 # As TOPAS places center of patient CT at the origin, 
 # ---
-s:Ge/RTION/ImgDirectory = Rt/RTION/CTDirectory
 dc:Ge/RTION/ImgCenterX  = {img_center_x} mm
 dc:Ge/RTION/ImgCenterY  = {img_center_y} mm
 dc:Ge/RTION/ImgCenterZ  = {img_center_z} mm
@@ -320,18 +275,18 @@ dc:Ge/RTION/ImgCenterZ  = {img_center_z} mm
 # this will not affect dose-grid
 # ---
 
-Ge/RTION/TransX = Ge/RTION/IsoCenterX - Ge/RTION/ImgCenterX mm
-Ge/RTION/TransY = Ge/RTION/IsoCenterY - Ge/RTION/ImgCenterY mm
-Ge/RTION/TransZ = Ge/RTION/IsoCenterZ - Ge/RTION/ImgCenterZ mm
+d:Ge/RTION/TransX = Ge/RTION/IsoCenterX - Ge/RTION/ImgCenterX mm
+d:Ge/RTION/TransY = Ge/RTION/IsoCenterY - Ge/RTION/ImgCenterY mm
+d:Ge/RTION/TransZ = Ge/RTION/IsoCenterZ - Ge/RTION/ImgCenterZ mm
 
 # ---
 # 3. Rotation RTIon components (only beamline components) 
 # ---
 #RotCollimator/Gantry/PatientSupport/IEC2DICOM are RTION specific
-Ge/RTION/RotCollimator      = Ge/RTION/CollimatorAngle deg
-Ge/RTION/RotGantry          = Ge/RTION/GantryAngle deg
-Ge/RTION/RotPatientSupport  = -1.0 * Ge/RTION/PatientSupportAngle deg
-Ge/RTION/RotIEC2DICOM       = 90 deg 
+d:Ge/RTION/RotCollimator      = Ge/RTION/CollimatorAngle deg
+d:Ge/RTION/RotGantry          = Ge/RTION/GantryAngle deg
+d:Ge/RTION/RotPatientSupport  = -1.0 * Ge/RTION/PatientSupportAngle deg
+d:Ge/RTION/RotIEC2DICOM       = 90 deg 
 
 ####################################################
 #----------------- RTIonSource  --------------------
@@ -349,13 +304,13 @@ dc:So/RTION/ImgCenterZ  = {img_center_z} mm
 # 2. Position RTIon components (only beamline component)
 # this will not affect dose-grid
 # ---
-So/RTION/ShiftX = So/RTION/IsoCenterX - So/RTION/ImgCenterX mm
-So/RTION/ShiftY = So/RTION/IsoCenterY - So/RTION/ImgCenterY mm
-So/RTION/ShiftZ = So/RTION/IsoCenterZ - So/RTION/ImgCenterZ mm
+d:So/RTION/ShiftX = So/RTION/IsoCenterX - So/RTION/ImgCenterX mm
+d:So/RTION/ShiftY = So/RTION/IsoCenterY - So/RTION/ImgCenterY mm
+d:So/RTION/ShiftZ = So/RTION/IsoCenterZ - So/RTION/ImgCenterZ mm
 
-So/RTION/RotCollimator      = So/RTION/CollimatorAngle deg
-So/RTION/RotGantry          = So/RTION/GantryAngle deg
-So/RTION/RotPatientSupport  = -1.0 * So/RTION/PatientSupportAngle deg
+d:So/RTION/RotCollimator      = So/RTION/CollimatorAngle deg
+d:So/RTION/RotGantry          = So/RTION/GantryAngle deg
+d:So/RTION/RotPatientSupport  = -1.0 * So/RTION/PatientSupportAngle deg
 
 
 ####################################################
@@ -485,11 +440,8 @@ iv:Gr/Color/PatientTissue24= 3 255 255 255
 iv:Gr/Color/PatientTissue25= 3 100 100 100
 
 """
-                    with open(os.path.join(beam_folder_path, "beam.txt"), "w", encoding="utf-8") as f:
-                        f.write(beamTemplate)
-
-                    with open(os.path.join(beam_folder_path, "run_all.txt"), "w", encoding="utf-8") as f:
-                        f.write(planTemplate+schneiderTemplate)
+                    with open(os.path.join(beam_folder_path, "run_beam.txt"), "w", encoding="utf-8") as f:
+                        f.write(beamTemplate+planTemplate+schneiderTemplate)
                         f.write(f"s:Sc/RTDose/OutputFile = \"Dw_patient_PPH{args.ParticlesperHistory}\"\n")
                     acc=0
                     for i, num_spots in enumerate(numb_scanspots):
@@ -501,7 +453,7 @@ iv:Gr/Color/PatientTissue25= 3 100 100 100
                         output_name = f"Dw_patient_CP{cp_id}"
                         full_path = os.path.join(beam_folder_path ,file_name)
                         with open(full_path, "w", encoding="utf-8") as f:
-                            f.write("includeFile=run_beam.txt")
+                            f.write(beamTemplate+planTemplate+schneiderTemplate)
                             f.write(f"""
 s:Sc/RTDose/OutputFile = \"{output_name}\"\n
 iv:So/RTION/BeamletRange = 2 {start} {end}\n""")
