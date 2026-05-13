@@ -4,7 +4,6 @@
 #|------Patient Folder
 #       |----Beam Folder
 #             |----run_beam.txt
-#             |----run_all.txt
 #             |----run_CP#.txt
 
 #In order to simulate the full beamlet Range, use run_all.txt, if you want just one control point (energy layer), choose the correct run_CP#.txt                                
