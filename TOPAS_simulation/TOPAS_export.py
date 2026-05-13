@@ -67,7 +67,7 @@ for patient_folder in os.listdir(args.inputPath):
                     if ct_file.endswith('.dcm') and ct_file.startswith('CT_'): 
                         #We can extract the CT number from the file name, which is in the format CT_X.dcm, where X is the CT number:
                         ct_number = int(ct_file.split('_')[1].split('.')[0])
-                        if ct_number > min_ct:
+                        if ct_number > max_ct:
                             max_ct= ct_number
                             last_ct_path = os.path.join(patient_path, ct_file)
                         if ct_number < min_ct:
