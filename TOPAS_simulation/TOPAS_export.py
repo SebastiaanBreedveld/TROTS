@@ -91,8 +91,8 @@ for patient_folder in os.listdir(args.inputPath):
                 x_i= first_ct_coordinates[0] - (pixel_spacing[0] / 2)
                 y_i= first_ct_coordinates[1] - (pixel_spacing[1] / 2)
                 z_i= first_ct_coordinates[2] - (slice_thickness / 2)
-                x_f= x_i+ (num_voxels_x + 1) * pixel_spacing[0] 
-                y_f= y_i+ (num_voxels_y + 1) * pixel_spacing[1]
+                x_f= x_i+ num_voxels_x * pixel_spacing[0] 
+                y_f= y_i+ num_voxels_y * pixel_spacing[1]
                 z_f= z_i+ (max_ct + 1) * slice_thickness
 
                 img_center_x = (x_i + x_f) / 2
