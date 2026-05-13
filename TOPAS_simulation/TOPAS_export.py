@@ -70,7 +70,7 @@ for patient_folder in os.listdir(args.inputPath):
                         if ct_number > min_ct:
                             max_ct= ct_number
                             last_ct_path = os.path.join(patient_path, ct_file)
-                        if ct_number < max_ct:
+                        if ct_number < min_ct:
                             min_ct = ct_number
                             first_ct_path = os.path.join(patient_path, ct_file)
                 
