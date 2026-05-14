@@ -309,10 +309,10 @@ i:Ge/RTION/BeamNumber  = Rt/RTION/BeamNumberToBeSimulated
 s:Ge/RTION/ImgDirectory = Rt/RTION/CTDirectory
 
 #Material information for subcomponent
-s:Ge/RTION/rangeshifter/Material = "RS_Lucite"
-s:Ge/RTION/Block/Material        = "G4_BRASS"
-s:Ge/RTION/Compensator/Material  = ""
-s:Ge/RTION/Snout/Material        = ""
+#s:Ge/RTION/rangeshifter/Material = "RS_Lucite"
+#s:Ge/RTION/Block/Material        = "G4_BRASS"
+#s:Ge/RTION/Compensator/Material  = ""
+#s:Ge/RTION/Snout/Material        = ""
 
 b:Ge/QuitIfOverlapDetected       = "T"
 b:Ge/RTION/IsParallel            = "F"
