@@ -251,9 +251,9 @@ i:Rt/RTION/BeamNumberToBeSimulated = {beam_number}
 ###################################################
 #----------------- World volume  ------------------
 ###################################################
-Ge/World/HLX = 110.0 cm
-Ge/World/HLY = 110.0 cm
-Ge/World/HLZ = 110.0 cm
+Ge/World/HLX = {args.hlx} cm
+Ge/World/HLY = {args.hly} cm
+Ge/World/HLZ = {args.hlz} cm
 Ge/World/Material = "Air"
 
 ###################################################
