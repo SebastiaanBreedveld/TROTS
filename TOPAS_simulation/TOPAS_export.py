@@ -330,10 +330,10 @@ dc:Ge/RTION/PatientSupportAngle = 0 deg
 dc:Ge/RTION/Iec2DicomAngle      = 0 deg
 
 # Optional parameters
-b:Ge/RTION/IncludeSnoutIfExist        = "T"
+b:Ge/RTION/IncludeSnoutIfExist        = "F"
 b:Ge/RTION/IncludeRangeshifterIfExist = "F"
-b:Ge/RTION/IncludeBlockIfExist        = "T"
-b:Ge/RTION/IncludeCompensatorIfExist  = "T"
+b:Ge/RTION/IncludeBlockIfExist        = "F"
+b:Ge/RTION/IncludeCompensatorIfExist  = "F"
 #b:Ge/RTION/Includedosegridifexist= "T"
 b:Ge/RTION/IncludeDoseGridIfExist= "T"
 s:Ge/RTION/RTDoseFile= Rt/RTION/RTDoseFile
