@@ -35,6 +35,8 @@ parser.add_argument("-s", "--DoseBeamSpots", type=list, nargs='?', help="A list 
 parser.add_argument("--DoseBoxLikeCT", nargs='?', help="Set to true to override the clipped dose box defined by TROTS and use instead the full CT as dose grid. Needed so that TROTSViewDVHs MATLAB script matches with DVHs computed from DICOM by e.g. SlicerRT.", default=False)
 parser.add_argument("--useRelativeGridOffset",nargs='?',help="Set to True to use relative Grid Frame Offset Vector (case a of Grid Frame Offset Vector Attribute in DICOM standard, see section C.8.8.3.2, strongly recommended)",default=True)
 parser.add_argument("--hideRangeShifter", nargs='?',help="Set to True to remove the physical Range Shifter and change the energy instead based on the water equivalent thickness",default=False)
+parser.add_argument("--convertMU", nargs='?', help="Set to True to use Number of Particles instead of Machine Units as the measurement unit of machine dosimeter.", default=False)
+parser.add_argument('--calibrationFile', help="Directory containing the file with the calibration information.",default="")
 
 args = parser.parse_args()
 
@@ -56,6 +58,24 @@ def get_energy_from_range(range_target, table):
     """
     f = interp1d(table[:, 1], table[:, 0], kind='linear', fill_value="extrapolate")
     return float(f(range_target))
+
+if args.convertMU:
+    calibration_df = pd.read_csv(
+        args.calibrationFile,
+        sep='\s+',
+        names=['Energy', 'Factor']
+    )
+
+    calibration_energies = calibration_df['Energy'].values
+    calibration_factors = calibration_df['Factor'].values
+    
+def get_particle_factor(energy):
+    return np.interp(
+        energy,
+        calibration_energies,
+        calibration_factors
+    )
+
 
 hideRangeShifter = args.hideRangeShifter if type(args.hideRangeShifter) == bool else args.hideRangeShifter == "True"
 useRelativeGridOffset = args.useRelativeGridOffset if type(args.useRelativeGridOffset) == bool else args.useRelativeGridOffset == "True"
@@ -428,7 +448,11 @@ for folder in caseFolders:
                 if(beaminfo["FileBeamNumber"] ==row[0]):
                     if((controlpointinfo["BeamEnergy"]==row[1]) and (controlpointinfo["RangeShifter"]==row[4])):
                         controlpointinfo["ScanSpotPositions"].extend(beamlistfolder["BeamList"][patientIndex][rowindex][2:4])
-                        controlpointinfo["MetersetWeights"].append(mat["solutionX"][rowindex])
+                        weight = float(mat["solutionX"][rowindex])
+                        if args.convertMU:
+                            factor = get_particle_factor(row[1])
+                            weight = weight * factor
+                        controlpointinfo["MetersetWeights"].append(weight)
                     else:
                         controlpointinfo["FileIndexEnd"] = rowindex
                         beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
@@ -436,7 +460,11 @@ for folder in caseFolders:
                         controlpointinfo["CumulativeMetersetWeight"] += sum(controlpointinfo["MetersetWeights"])
                         controlpointinfo["ControlPointNumber"] += 1
                         controlpointinfo["BeamEnergy"] = row[1]
-                        controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
+                        weight = float(mat["solutionX"][rowindex])
+                        if args.convertMU:
+                            factor = get_particle_factor(row[1])
+                            weight = weight * factor
+                        controlpointinfo["MetersetWeights"]=[weight]
                         controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][patientIndex][rowindex][2:4].tolist()
                         if(controlpointinfo["RangeShifter"]!=row[4]):
                             controlpointinfo["RangeShifter"] = row[4]
@@ -461,7 +489,11 @@ for folder in caseFolders:
 
                     controlpointinfo["ControlPointNumber"] = 0
                     controlpointinfo["BeamEnergy"] = row[1]
-                    controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
+                    weight = float(mat["solutionX"][rowindex])
+                    if args.convertMU:
+                        factor = get_particle_factor(row[1])
+                        weight = weight * factor
+                    controlpointinfo["MetersetWeights"]=[weight]
                     controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][patientIndex][rowindex][2:4].tolist()
                     controlpointinfo["RangeShifter"] = row[4]
                     controlpointinfo["FileIndexStart"] = controlpointinfo["FileIndexEnd"]
@@ -599,7 +631,7 @@ for folder in caseFolders:
                 # be.ManufacturerModelName = args.ManufacturerModelName # Optional
                 # be.ToleranceTableNumber = '0' # Optional
                 be.TreatmentMachineName = args.TreatmentMachineName
-                be.PrimaryDosimeterUnit = "MU"
+                be.PrimaryDosimeterUnit = "NP" if args.convertMU else "MU"
                 be.BeamNumber             = beaminfo["BeamNumber"]
                 be.BeamName               = str(beaminfo["BeamNumber"])
                 be.BeamDescription        = '' # Optional
@@ -641,7 +673,10 @@ for folder in caseFolders:
                 be.PatientSupportType = 'TABLE'
                 be.PatientSupportID = 'TABLE' # Optional
 
-                MetersetWeightTolerance = 1e-8
+                if args.convertMU:
+                    MetersetWeightTolerance = 1
+                else:
+                    MetersetWeightTolerance = 1e-8
                 totalMetersetWeightOfControlPoints = 0
                 halfGantry = args.halfGantry if type(args.halfGantry)==bool else args.halfGantry=='True'
                 for controlpointinfo in beaminfo["ControlPoints"]:
@@ -763,12 +798,18 @@ for folder in caseFolders:
                 assert(abs(be.FinalCumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
                 rtds.IonBeamSequence.append(be)
                 totalMetersetWeightOfBeams += be.FinalCumulativeMetersetWeight
-            assert(abs(totalMetersetWeightOfBeams - sum(mat["solutionX"])) < MetersetWeightTolerance)
-            if int(pydicom.__version_info__[0]) >= 3:
-                rtds.save_as(outFolder+'rtplan.dcm', enforce_file_format = True)
+            if not args.convertMU:
+                assert(abs(totalMetersetWeightOfBeams - sum(mat["solutionX"])) < MetersetWeightTolerance)
+                if int(pydicom.__version_info__[0]) >= 3:
+                    rtds.save_as(outFolder+'rtplan.dcm', enforce_file_format = True)
+                else:
+                    rtds.save_as(outFolder+'rtplan.dcm', write_like_original = False)
             else:
-                rtds.save_as(outFolder+'rtplan.dcm', write_like_original = False)
-
+                if int(pydicom.__version_info__[0]) >= 3:
+                    rtds.save_as(outFolder+'rtplan_NP.dcm', enforce_file_format = True)
+                else:
+                    rtds.save_as(outFolder+'rtplan_NP.dcm', write_like_original = False)
+            
             # write rtdose
             if not args.rtdose or (type(args.rtdose) == str and args.rtdose=='False'):
                 continue
