@@ -334,7 +334,6 @@ b:Ge/RTION/IncludeSnoutIfExist        = "F"
 b:Ge/RTION/IncludeRangeshifterIfExist = "F"
 b:Ge/RTION/IncludeBlockIfExist        = "F"
 b:Ge/RTION/IncludeCompensatorIfExist  = "F"
-#b:Ge/RTION/Includedosegridifexist= "T"
 b:Ge/RTION/IncludeDoseGridIfExist= "T"
 s:Ge/RTION/RTDoseFile= Rt/RTION/RTDoseFile
 
