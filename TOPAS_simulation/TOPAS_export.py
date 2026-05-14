@@ -33,6 +33,9 @@ parser.add_argument("-n", "--numberOfThreads", nargs='?', help="By default, TOPA
 parser.add_argument("-s", "--SID", nargs='?', help="Source to Isocenter Distance / cm", default=39.0)
 parser.add_argument("--CPFiles", nargs='?', help="Set to true to write files for each energy layer (Control Point)", default=True)
 parser.add_argument("--SPFiles", nargs='?', help="Set to true to write files for each Spot inside each energy layer (Control Point)", default=False)
+parser.add_argument("--hlx", nargs='?', help="World's Half Lenght for X axis / cm", default=110.0)
+parser.add_argument("--hly", nargs='?', help="World's Half Lenght for Y axis / cm", default=110.0)
+parser.add_argument("--hlz", nargs='?', help="World's Half Lenght for Z axis / cm", default=110.0)
 
 args = parser.parse_args()
 
