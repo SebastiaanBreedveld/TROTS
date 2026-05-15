@@ -11,6 +11,7 @@ from pydicom.tag import Tag
 import csv
 import seaborn as sns
 from scipy.interpolate import griddata
+import pandas as pd
 
 # -b /opt --TreatmentMachineName CGTR_2021 --rtdose False --tuneID Spot1 --rsID RS7.4cm --keyHole True --halfGantry True --minEnergy 100 --maxEnergy 226.09
 parser = argparse.ArgumentParser()
@@ -35,7 +36,7 @@ parser.add_argument("-s", "--DoseBeamSpots", type=list, nargs='?', help="A list 
 parser.add_argument("--DoseBoxLikeCT", nargs='?', help="Set to true to override the clipped dose box defined by TROTS and use instead the full CT as dose grid. Needed so that TROTSViewDVHs MATLAB script matches with DVHs computed from DICOM by e.g. SlicerRT.", default=False)
 parser.add_argument("--useRelativeGridOffset",nargs='?',help="Set to True to use relative Grid Frame Offset Vector (case a of Grid Frame Offset Vector Attribute in DICOM standard, see section C.8.8.3.2, strongly recommended)",default=True)
 parser.add_argument("--hideRangeShifter", nargs='?',help="Set to True to remove the physical Range Shifter and change the energy instead based on the water equivalent thickness",default=False)
-parser.add_argument("--MU2NPcalibrationFile",  help="Name of the calibration file. Providing a file enables conversion from Monitor Units to Number of Particles.", default="")
+parser.add_argument("--MU2NPcalibrationFile",  help="Name of the calibration file. Providing a file enables conversion from Monitor Units to Number of Particles. The format of the file should be a txt with two columns: first one energy, second one scaling factor by which to multiply MU to get number of protons, spaces separated.", default="")
 
 args = parser.parse_args()
 
@@ -60,7 +61,7 @@ def get_energy_from_range(range_target, table):
 
 if args.MU2NPcalibrationFile:
     calibration_df = pd.read_csv(
-        args.calibrationFile,
+        args.MU2NPcalibrationFile,
         sep='\s+',
         names=['Energy', 'Factor']
     )
@@ -68,7 +69,7 @@ if args.MU2NPcalibrationFile:
     calibration_energies = calibration_df['Energy'].values
     calibration_factors = calibration_df['Factor'].values
     
-def get_MU_to_Np_factor(energy):
+def get_MU_to_NP_factor(energy):
     return np.interp(
         energy,
         calibration_energies,
