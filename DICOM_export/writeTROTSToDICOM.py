@@ -11,6 +11,7 @@ from pydicom.tag import Tag
 import csv
 import seaborn as sns
 from scipy.interpolate import griddata
+import pandas as pd
 
 # -b /opt --TreatmentMachineName CGTR_2021 --rtdose False --tuneID Spot1 --rsID RS7.4cm --keyHole True --halfGantry True --minEnergy 100 --maxEnergy 226.09
 parser = argparse.ArgumentParser()
@@ -35,6 +36,7 @@ parser.add_argument("-s", "--DoseBeamSpots", type=list, nargs='?', help="A list 
 parser.add_argument("--DoseBoxLikeCT", nargs='?', help="Set to true to override the clipped dose box defined by TROTS and use instead the full CT as dose grid. Needed so that TROTSViewDVHs MATLAB script matches with DVHs computed from DICOM by e.g. SlicerRT.", default=False)
 parser.add_argument("--useRelativeGridOffset",nargs='?',help="Set to True to use relative Grid Frame Offset Vector (case a of Grid Frame Offset Vector Attribute in DICOM standard, see section C.8.8.3.2, strongly recommended)",default=True)
 parser.add_argument("--hideRangeShifter", nargs='?',help="Set to True to remove the physical Range Shifter and change the energy instead based on the water equivalent thickness",default=False)
+parser.add_argument("--MU2NPcalibrationFile",  help="Name of the calibration file. Providing a file enables conversion from Monitor Units to Number of Particles. The format of the file should be a txt with two columns: first one energy, second one scaling factor by which to multiply MU to get number of protons, spaces separated.", default="")
 
 args = parser.parse_args()
 
@@ -56,6 +58,24 @@ def get_energy_from_range(range_target, table):
     """
     f = interp1d(table[:, 1], table[:, 0], kind='linear', fill_value="extrapolate")
     return float(f(range_target))
+
+if args.MU2NPcalibrationFile:
+    calibration_df = pd.read_csv(
+        args.MU2NPcalibrationFile,
+        sep='\s+',
+        names=['Energy', 'Factor']
+    )
+
+    calibration_energies = calibration_df['Energy'].values
+    calibration_factors = calibration_df['Factor'].values
+    
+def get_MU_to_NP_factor(energy):
+    return np.interp(
+        energy,
+        calibration_energies,
+        calibration_factors
+    )
+
 
 hideRangeShifter = args.hideRangeShifter if type(args.hideRangeShifter) == bool else args.hideRangeShifter == "True"
 useRelativeGridOffset = args.useRelativeGridOffset if type(args.useRelativeGridOffset) == bool else args.useRelativeGridOffset == "True"
@@ -355,7 +375,7 @@ for folder in caseFolders:
             rtds.SOPInstanceUID = SOPInstanceUID
             rtds.StudyDate = rds.StudyDate
             rtds.SeriesDate = rds.StudyDate
-            rtds.SeriesDescription = "solutionX"
+            rtds.SeriesDescription = "solutionX NP calibrated" if args.MU2NPcalibrationFile else "solutionX"
             rtds.StudyTime = rds.StudyTime
             rtds.AccessionNumber = rds.AccessionNumber
             rtds.Modality = "RTPLAN"
@@ -421,6 +441,10 @@ for folder in caseFolders:
             controlpointinfo["RangeShifter"] = beamlistfolder["BeamList"][patientIndex][0][4]
             controlpointinfo["FileIndexStart"] = 0
             controlpointinfo["FileIndexEnd"] = 0
+            if args.MU2NPcalibrationFile :
+                beaminfo["FinalNP"] = 0
+                controlpointinfo["NP"] = []
+                controlpointinfo["CumulativeNP"] = 0
             for rowindex in range(len(beamlistfolder["BeamList"][patientIndex])):
                 row = beamlistfolder["BeamList"][patientIndex][rowindex]
                 if((row[4]!=0) and (row[4] not in beaminfo["RangeShifters"])):
@@ -429,14 +453,26 @@ for folder in caseFolders:
                     if((controlpointinfo["BeamEnergy"]==row[1]) and (controlpointinfo["RangeShifter"]==row[4])):
                         controlpointinfo["ScanSpotPositions"].extend(beamlistfolder["BeamList"][patientIndex][rowindex][2:4])
                         controlpointinfo["MetersetWeights"].append(mat["solutionX"][rowindex])
+                        if args.MU2NPcalibrationFile:
+                            weight=float(mat["solutionX"][rowindex])
+                            factor = get_MU_to_NP_factor(row[1])
+                            controlpointinfo["NP"] = [weight * factor]
                     else:
                         controlpointinfo["FileIndexEnd"] = rowindex
                         beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
                         controlpointinfo["FileIndexStart"] = controlpointinfo["FileIndexEnd"]
                         controlpointinfo["CumulativeMetersetWeight"] += sum(controlpointinfo["MetersetWeights"])
+                        if args.MU2NPcalibrationFile :
+                            controlpointinfo["CumulativeNP"] += sum(controlpointinfo["NP"])
                         controlpointinfo["ControlPointNumber"] += 1
                         controlpointinfo["BeamEnergy"] = row[1]
                         controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
+                        if args.MU2NPcalibrationFile:
+                            weight = float(mat["solutionX"][rowindex])
+                            factor = get_MU_to_NP_factor(row[1])
+                            controlpointinfo["NP"] = [weight * factor]
+                           
+                        
                         controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][patientIndex][rowindex][2:4].tolist()
                         if(controlpointinfo["RangeShifter"]!=row[4]):
                             controlpointinfo["RangeShifter"] = row[4]
@@ -444,6 +480,8 @@ for folder in caseFolders:
                 else:
                     controlpointinfo["FileIndexEnd"] = rowindex
                     beaminfo["FinalCumulativeMetersetWeight"] = controlpointinfo["CumulativeMetersetWeight"] + sum(controlpointinfo["MetersetWeights"])
+                    if args.MU2NPcalibrationFile:
+                        beaminfo["FinalNP"] = controlpointinfo["CumulativeNP"] + sum(controlpointinfo["NP"])
                     beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
                     beaminfo["FileIndexEnd"] = rowindex
                     currentbeamlist.append(copy.deepcopy(beaminfo))
@@ -455,17 +493,26 @@ for folder in caseFolders:
                         beaminfo["RangeShifters"] = []
                     else:
                         beaminfo["RangeShifters"] = [beamlistfolder["BeamList"][patientIndex][0][4]]
-                    beaminfo["FinalCumulativeMetersetWeight"] = 0
                     beaminfo["ControlPoints"] = []
+                    beaminfo["FinalCumulativeMetersetWeight"] = 0
                     controlpointinfo["CumulativeMetersetWeight"] = 0
+                    if args.MU2NPcalibrationFile:
+                        beaminfo["FinalNP"] = 0
+                        controlpointinfo["CumulativeNP"] = 0
 
                     controlpointinfo["ControlPointNumber"] = 0
                     controlpointinfo["BeamEnergy"] = row[1]
                     controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
+                    if  args.MU2NPcalibrationFile :
+                        weight = float(mat["solutionX"][rowindex])
+                        factor = get_MU_to_NP_factor(row[1])
+                        controlpointinfo["NP"] = [weight * factor]
                     controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][patientIndex][rowindex][2:4].tolist()
                     controlpointinfo["RangeShifter"] = row[4]
                     controlpointinfo["FileIndexStart"] = controlpointinfo["FileIndexEnd"]
             beaminfo["FinalCumulativeMetersetWeight"] = controlpointinfo["CumulativeMetersetWeight"] + sum(controlpointinfo["MetersetWeights"])
+            if args.MU2NPcalibrationFile :
+                beaminfo["FinalNP"] = float(controlpointinfo["CumulativeNP"]) +sum(float(x) for x in controlpointinfo["NP"])
             controlpointinfo["FileIndexEnd"] = len(beamlistfolder["BeamList"][patientIndex])
             beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
             beaminfo["FileIndexEnd"] = len(beamlistfolder["BeamList"][patientIndex])
@@ -575,7 +622,10 @@ for folder in caseFolders:
             fractionds.ReferencedBeamSequence = Sequence()
             for beaminfo in currentbeamlist:
                 be = Dataset()
-                be.BeamMeterset = format_number_as_ds(beaminfo["FinalCumulativeMetersetWeight"])
+                if args.MU2NPcalibrationFile:
+                    be.BeamMeterset = format_number_as_ds(beaminfo["FinalNP"])
+                else:
+                    be.BeamMeterset = format_number_as_ds(beaminfo["FinalCumulativeMetersetWeight"])
                 be.ReferencedBeamNumber = beaminfo["BeamNumber"]
                 fractionds.ReferencedBeamSequence.append(be)
             # fractionds.ReferencedDoseReferenceSequence = Sequence() # Optional
@@ -599,7 +649,7 @@ for folder in caseFolders:
                 # be.ManufacturerModelName = args.ManufacturerModelName # Optional
                 # be.ToleranceTableNumber = '0' # Optional
                 be.TreatmentMachineName = args.TreatmentMachineName
-                be.PrimaryDosimeterUnit = "MU"
+                be.PrimaryDosimeterUnit = "NP" if args.MU2NPcalibrationFile else "MU"
                 be.BeamNumber             = beaminfo["BeamNumber"]
                 be.BeamName               = str(beaminfo["BeamNumber"])
                 be.BeamDescription        = '' # Optional
@@ -610,7 +660,10 @@ for folder in caseFolders:
                 be.NumberOfCompensators   = 0
                 be.NumberOfBoli           = 0
                 be.NumberOfBlocks         = 0
-                be.FinalCumulativeMetersetWeight = format_number_as_ds(beaminfo["FinalCumulativeMetersetWeight"])
+                if args.MU2NPcalibrationFile:
+                    be.FinalCumulativeMetersetWeight = format_number_as_ds(beaminfo["FinalNP"])
+                else:
+                    be.FinalCumulativeMetersetWeight = format_number_as_ds(beaminfo["FinalCumulativeMetersetWeight"])
                 be.ScanMode                   = 'MODULATED'
                 be.VirtualSourceAxisDistances = SAD
                 if hideRangeShifter or (len(beaminfo["RangeShifters"]) ==0):
@@ -641,6 +694,7 @@ for folder in caseFolders:
                 be.PatientSupportType = 'TABLE'
                 be.PatientSupportID = 'TABLE' # Optional
 
+                NPTolerance = 1e-1
                 MetersetWeightTolerance = 1e-8
                 totalMetersetWeightOfControlPoints = 0
                 halfGantry = args.halfGantry if type(args.halfGantry)==bool else args.halfGantry=='True'
@@ -649,7 +703,10 @@ for folder in caseFolders:
                     icpoi.NominalBeamEnergyUnit = 'MEV'
                     icpoi.ControlPointIndex = 2*controlpointinfo["ControlPointNumber"]
                     icpoi.NominalBeamEnergy = format_number_as_ds(min(max(float(args.minEnergy),controlpointinfo["BeamEnergy"]), float(args.maxEnergy)))
-                    icpoi.CumulativeMetersetWeight = format_number_as_ds(float(controlpointinfo["CumulativeMetersetWeight"]))
+                    if args.MU2NPcalibrationFile:
+                        icpoi.CumulativeMetersetWeight = format_number_as_ds(float(controlpointinfo["CumulativeNP"]))
+                    else:
+                        icpoi.CumulativeMetersetWeight = format_number_as_ds(float(controlpointinfo["CumulativeMetersetWeight"]))
                     icpoi.GantryAngle = mat['patient']['Beams']['BeamConfig'][beaminfo["FileBeamNumber"]-1]['Gantry']
                     icpoi.GantryRotationDirection = 'NONE'
                     icpoi.BeamLimitingDeviceAngle = mat['patient']['Beams']['BeamConfig'][beaminfo["FileBeamNumber"]-1]['Collimator']
@@ -673,9 +730,15 @@ for folder in caseFolders:
                         icpoi.GantryAngle = 360 - icpoi.GantryAngle
                     icpoi.SnoutPosition = 0 # or None if you remove the optional SnoutSequence
                     icpoi.ScanSpotTuneID = args.tuneID
-                    icpoi.NumberOfScanSpotPositions = len(controlpointinfo["MetersetWeights"])
+                    if args.MU2NPcalibrationFile:
+                        icpoi.NumberOfScanSpotPositions = len(controlpointinfo["NP"])
+                    else:
+                        icpoi.NumberOfScanSpotPositions = len(controlpointinfo["MetersetWeights"])
                     icpoi.ScanSpotPositionMap = controlpointinfo["ScanSpotPositions"]
-                    icpoi.ScanSpotMetersetWeights = controlpointinfo["MetersetWeights"]
+                    if args.MU2NPcalibrationFile:
+                        icpoi.ScanSpotMetersetWeights = controlpointinfo["NP"]
+                    else:
+                        icpoi.ScanSpotMetersetWeights = controlpointinfo["MetersetWeights"]
                     sigma1 = np.interp(controlpointinfo["BeamEnergy"], energyRangeTable[:, 0], beamSigmas[:, 0])
                     sigma2 = np.interp(controlpointinfo["BeamEnergy"], energyRangeTable[:, 0], beamSigmas[:, 1])
                     icpoi.ScanningSpotSize = [sigma1,sigma2]
@@ -700,7 +763,10 @@ for folder in caseFolders:
                             final_e = float(original_e)
                         final_e = float(get_energy_from_range(final_r, energyRangeTable))
                         icpoi.NominalBeamEnergy=format_number_as_ds(final_e)
-                    assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
+                    if args.MU2NPcalibrationFile:
+                        assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < NPTolerance)
+                    else:
+                        assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
                     if(icpoi.NumberOfScanSpotPositions != 1):
                         totalMetersetWeightOfControlPoints += sum(icpoi.ScanSpotMetersetWeights)
                     else:
@@ -717,11 +783,19 @@ for folder in caseFolders:
                     icpoi.NominalBeamEnergyUnit = 'MEV'
                     icpoi.ControlPointIndex = 2*controlpointinfo["ControlPointNumber"] + 1
                     icpoi.NominalBeamEnergy = format_number_as_ds(min(max(float(args.minEnergy),controlpointinfo["BeamEnergy"]), float(args.maxEnergy)))
-                    icpoi.CumulativeMetersetWeight = format_number_as_ds(controlpointinfo["CumulativeMetersetWeight"]+ sum(controlpointinfo["MetersetWeights"]))
+                    if args.MU2NPcalibrationFile:
+                        icpoi.CumulativeMetersetWeight = format_number_as_ds(float(controlpointinfo["CumulativeNP"])+ sum(float(x) for x in controlpointinfo["NP"]))
+                    else:
+                        icpoi.CumulativeMetersetWeight = format_number_as_ds(controlpointinfo["CumulativeMetersetWeight"]+ sum(controlpointinfo["MetersetWeights"]))
                     icpoi.ScanSpotTuneID = args.tuneID
-                    icpoi.NumberOfScanSpotPositions = len(controlpointinfo["MetersetWeights"])
+                    if args.MU2NPcalibrationFile:
+                        icpoi.NumberOfScanSpotPositions = len(controlpointinfo["NP"])
+                        icpoi.ScanSpotMetersetWeights = [0.0 for i in range(len(controlpointinfo["NP"]))]
+                    else:
+                        icpoi.NumberOfScanSpotPositions = len(controlpointinfo["MetersetWeights"])
+                        icpoi.ScanSpotMetersetWeights = [0.0 for i in range(len(controlpointinfo["MetersetWeights"]))]
+
                     icpoi.ScanSpotPositionMap = controlpointinfo["ScanSpotPositions"]
-                    icpoi.ScanSpotMetersetWeights = [0.0 for i in range(len(controlpointinfo["MetersetWeights"]))]
                     icpoi.ScanningSpotSize = [sigma1,sigma2]
                     icpoi.NumberOfPaintings = 1
                     if hideRangeShifter==False:
@@ -749,26 +823,35 @@ for folder in caseFolders:
                             raise ValueError("Invalid negative range value")
                         final_e = float(get_energy_from_range(final_r, energyRangeTable))
                         icpoi.NominalBeamEnergy = format_number_as_ds(final_e)
-                        
-
-                        
-                        
-                    assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
+                    if args.MU2NPcalibrationFile:
+                        assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < NPTolerance)
+                    else:
+                        assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
                     if(icpoi.NumberOfScanSpotPositions != 1):
                         totalMetersetWeightOfControlPoints += sum(icpoi.ScanSpotMetersetWeights)
                     else:
                         totalMetersetWeightOfControlPoints += icpoi.ScanSpotMetersetWeights
                     be.IonControlPointSequence.append(icpoi)
-                assert(abs(be.FinalCumulativeMetersetWeight - icpoi.CumulativeMetersetWeight) < MetersetWeightTolerance)
-                assert(abs(be.FinalCumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
+                if args.MU2NPcalibrationFile:   
+                    assert(abs(be.FinalCumulativeMetersetWeight - icpoi.CumulativeMetersetWeight) < NPTolerance)
+                    assert(abs(be.FinalCumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < NPTolerance)
+                else:
+                    assert(abs(be.FinalCumulativeMetersetWeight - icpoi.CumulativeMetersetWeight) < MetersetWeightTolerance)
+                    assert(abs(be.FinalCumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < MetersetWeightTolerance)
                 rtds.IonBeamSequence.append(be)
                 totalMetersetWeightOfBeams += be.FinalCumulativeMetersetWeight
-            assert(abs(totalMetersetWeightOfBeams - sum(mat["solutionX"])) < MetersetWeightTolerance)
-            if int(pydicom.__version_info__[0]) >= 3:
-                rtds.save_as(outFolder+'rtplan.dcm', enforce_file_format = True)
+            if not args.MU2NPcalibrationFile:
+                assert(abs(totalMetersetWeightOfBeams - sum(mat["solutionX"])) < MetersetWeightTolerance)
+                if int(pydicom.__version_info__[0]) >= 3:
+                    rtds.save_as(outFolder+'rtplan.dcm', enforce_file_format = True)
+                else:
+                    rtds.save_as(outFolder+'rtplan.dcm', write_like_original = False)
             else:
-                rtds.save_as(outFolder+'rtplan.dcm', write_like_original = False)
-
+                if int(pydicom.__version_info__[0]) >= 3:
+                    rtds.save_as(outFolder+'rtplan_NP.dcm', enforce_file_format = True)
+                else:
+                    rtds.save_as(outFolder+'rtplan_NP.dcm', write_like_original = False)
+            
             # write rtdose
             if not args.rtdose or (type(args.rtdose) == str and args.rtdose=='False'):
                 continue
@@ -1099,7 +1182,7 @@ for folder in caseFolders:
                 bsdoseds.DoseGridScaling = scaling
                 dose_uint16 = (dose / scaling).astype(np.uint16)
                 bsdoseds.PixelData = np.swapaxes(dose_uint16, 2, 0).flatten().tobytes()
-                subfolder_path = os.path.join(outFolder, f"RTDose_Beam{beamSpotNumber[0]}_SPs}")
+                subfolder_path = os.path.join(outFolder, f"RTDose_Beam{beamSpotNumber[0]}_SPs")
                 os.makedirs(subfolder_path, exist_ok=True)
 
                 filename = f"rtdose_beam{beamSpotNumber[0]}_CP{beamSpotNumber[1]}_SP{beamSpotNumber[2]}.dcm"
