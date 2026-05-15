@@ -509,10 +509,9 @@ for folder in caseFolders:
                     controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][patientIndex][rowindex][2:4].tolist()
                     controlpointinfo["RangeShifter"] = row[4]
                     controlpointinfo["FileIndexStart"] = controlpointinfo["FileIndexEnd"]
+            beaminfo["FinalCumulativeMetersetWeight"] = controlpointinfo["CumulativeMetersetWeight"] + sum(controlpointinfo["MetersetWeights"])
             if args.MU2NPcalibrationFile :
                 beaminfo["FinalNP"] = float(controlpointinfo["CumulativeNP"]) +sum(float(x) for x in controlpointinfo["NP"])
-            else:
-                beaminfo["FinalCumulativeMetersetWeight"] = controlpointinfo["CumulativeMetersetWeight"] + sum(controlpointinfo["MetersetWeights"])
             controlpointinfo["FileIndexEnd"] = len(beamlistfolder["BeamList"][patientIndex])
             beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
             beaminfo["FileIndexEnd"] = len(beamlistfolder["BeamList"][patientIndex])
