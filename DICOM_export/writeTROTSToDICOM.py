@@ -493,12 +493,11 @@ for folder in caseFolders:
                     else:
                         beaminfo["RangeShifters"] = [beamlistfolder["BeamList"][patientIndex][0][4]]
                     beaminfo["ControlPoints"] = []
+                    beaminfo["FinalCumulativeMetersetWeight"] = 0
+                    controlpointinfo["CumulativeMetersetWeight"] = 0
                     if args.MU2NPcalibrationFile:
                         beaminfo["FinalNP"] = 0
                         controlpointinfo["CumulativeNP"] = 0
-                    else:
-                        beaminfo["FinalCumulativeMetersetWeight"] = 0
-                        controlpointinfo["CumulativeMetersetWeight"] = 0
 
                     controlpointinfo["ControlPointNumber"] = 0
                     controlpointinfo["BeamEnergy"] = row[1]
