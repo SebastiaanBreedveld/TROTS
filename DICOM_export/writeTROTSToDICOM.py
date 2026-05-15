@@ -501,12 +501,11 @@ for folder in caseFolders:
 
                     controlpointinfo["ControlPointNumber"] = 0
                     controlpointinfo["BeamEnergy"] = row[1]
+                    controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
                     if  args.MU2NPcalibrationFile :
                         weight = float(mat["solutionX"][rowindex])
                         factor = get_MU_to_NP_factor(row[1])
                         controlpointinfo["NP"] = [weight * factor]
-                    else:
-                        controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
                     controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][patientIndex][rowindex][2:4].tolist()
                     controlpointinfo["RangeShifter"] = row[4]
                     controlpointinfo["FileIndexStart"] = controlpointinfo["FileIndexEnd"]
