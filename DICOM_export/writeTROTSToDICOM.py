@@ -693,7 +693,7 @@ for folder in caseFolders:
                 be.PatientSupportType = 'TABLE'
                 be.PatientSupportID = 'TABLE' # Optional
 
-                NPTolerance = 1
+                NPTolerance = 1e-1
                 MetersetWeightTolerance = 1e-8
                 totalMetersetWeightOfControlPoints = 0
                 halfGantry = args.halfGantry if type(args.halfGantry)==bool else args.halfGantry=='True'
