@@ -478,10 +478,9 @@ for folder in caseFolders:
                             beaminfo["ConstantRangeShifter"] = False
                 else:
                     controlpointinfo["FileIndexEnd"] = rowindex
+                    beaminfo["FinalCumulativeMetersetWeight"] = controlpointinfo["CumulativeMetersetWeight"] + sum(controlpointinfo["MetersetWeights"])
                     if args.MU2NPcalibrationFile:
                         beaminfo["FinalNP"] = controlpointinfo["CumulativeNP"] + sum(controlpointinfo["NP"])
-                    else:
-                        beaminfo["FinalCumulativeMetersetWeight"] = controlpointinfo["CumulativeMetersetWeight"] + sum(controlpointinfo["MetersetWeights"])
                     beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
                     beaminfo["FileIndexEnd"] = rowindex
                     currentbeamlist.append(copy.deepcopy(beaminfo))
