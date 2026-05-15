@@ -450,13 +450,12 @@ for folder in caseFolders:
                     beaminfo["RangeShifters"].append(row[4])
                 if(beaminfo["FileBeamNumber"] ==row[0]):
                     if((controlpointinfo["BeamEnergy"]==row[1]) and (controlpointinfo["RangeShifter"]==row[4])):
-                        controlpointinfo["ScanSpotPositions"].extend(beamlistfolder["BeamList"][patientIndex][rowindex][2:4])                        
+                        controlpointinfo["ScanSpotPositions"].extend(beamlistfolder["BeamList"][patientIndex][rowindex][2:4])
+                        controlpointinfo["MetersetWeights"].append(mat["solutionX"][rowindex])
                         if args.MU2NPcalibrationFile:
                             weight=float(mat["solutionX"][rowindex])
                             factor = get_MU_to_NP_factor(row[1])
                             controlpointinfo["NP"] = [weight * factor]
-                        else:
-                            controlpointinfo["MetersetWeights"].append(mat["solutionX"][rowindex])
                     else:
                         controlpointinfo["FileIndexEnd"] = rowindex
                         beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
