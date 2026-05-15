@@ -35,8 +35,7 @@ parser.add_argument("-s", "--DoseBeamSpots", type=list, nargs='?', help="A list 
 parser.add_argument("--DoseBoxLikeCT", nargs='?', help="Set to true to override the clipped dose box defined by TROTS and use instead the full CT as dose grid. Needed so that TROTSViewDVHs MATLAB script matches with DVHs computed from DICOM by e.g. SlicerRT.", default=False)
 parser.add_argument("--useRelativeGridOffset",nargs='?',help="Set to True to use relative Grid Frame Offset Vector (case a of Grid Frame Offset Vector Attribute in DICOM standard, see section C.8.8.3.2, strongly recommended)",default=True)
 parser.add_argument("--hideRangeShifter", nargs='?',help="Set to True to remove the physical Range Shifter and change the energy instead based on the water equivalent thickness",default=False)
-parser.add_argument("--convertMU", nargs='?', help="Set to True to use Number of Particles instead of Machine Units as the measurement unit of machine dosimeter.", default=False)
-parser.add_argument('--calibrationFile', help="Directory containing the file with the calibration information.",default="")
+parser.add_argument("--MU2NPcalibrationFile",  help="Name of the calibration file. Providing a file enables conversion from Monitor Units to Number of Particles.", default="")
 
 args = parser.parse_args()
 
