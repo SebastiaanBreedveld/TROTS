@@ -375,7 +375,7 @@ for folder in caseFolders:
             rtds.SOPInstanceUID = SOPInstanceUID
             rtds.StudyDate = rds.StudyDate
             rtds.SeriesDate = rds.StudyDate
-            rtds.SeriesDescription = "solutionX"
+            rtds.SeriesDescription = "solutionX NP calibrated" if args.MU2NPcalibrationFile else "solutionX"
             rtds.StudyTime = rds.StudyTime
             rtds.AccessionNumber = rds.AccessionNumber
             rtds.Modality = "RTPLAN"
