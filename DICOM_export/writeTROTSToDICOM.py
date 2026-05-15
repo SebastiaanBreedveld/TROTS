@@ -790,7 +790,6 @@ for folder in caseFolders:
                     if args.MU2NPcalibrationFile:
                         icpoi.NumberOfScanSpotPositions = len(controlpointinfo["NP"])
                         icpoi.ScanSpotMetersetWeights = [0.0 for i in range(len(controlpointinfo["NP"]))]
-
                     else:
                         icpoi.NumberOfScanSpotPositions = len(controlpointinfo["MetersetWeights"])
                         icpoi.ScanSpotMetersetWeights = [0.0 for i in range(len(controlpointinfo["MetersetWeights"]))]
