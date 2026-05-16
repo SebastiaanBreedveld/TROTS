@@ -499,7 +499,7 @@ iv:So/RTION/BeamletRange = 2 {start} {end}\n""")
                                 full_path = os.path.join(beam_folder_path ,file_name)
                                 with open(full_path, "w", encoding="utf-8") as f:
                                     f.write(f"""
-                                    includeFile=run_beam.txt
+includeFile=run_beam.txt
 s:Sc/RTDose/OutputFile = \"{output_name}\"\n
 iv:So/RTION/BeamletRange = 2 {spot} {spot}\n""")
 
