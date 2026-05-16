@@ -2,7 +2,7 @@
 
 ## Previous requirements
 
-These scripts are intended to run once the writeTROTStoDICOM.py file has been fully compiled
+These scripts are intended to run once the writeTROTStoDICOM.py file has been fully executed.
 That script must have been compiled with the following arguments:
 
 ```python
