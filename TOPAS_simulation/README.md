@@ -2,7 +2,7 @@
 
 ## Previous requirements
 
-Estos scripts están pensados para ejecutarse una vez se haya compilado al completo write TROTStoDICOM.py
+These scripts are intended to run once the writeTROTStoDICOM.py file has been fully compiled
 Ese script ha de haberse compilado con los siguientes argumentos:
 
 ```python
