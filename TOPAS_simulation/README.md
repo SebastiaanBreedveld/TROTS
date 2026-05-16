@@ -51,6 +51,6 @@ In order to run this script:
 ```python
           --MU2NPcalibrationFile = "calibration_file.txt"
 ```
-5) After this, the final generate_scripts.py can be rerun using a realistinc number of PPH
+5) After this, the final generate_scripts.py can be rerun using a realistic number of PPH (e.g. 1e5)
    
 IMPORTANT: If you later want to compare the TOPAS DVH with the RTDose DVH, the final Dw.bin dose distribution must be scaled by the corresponding PPH value.
