@@ -43,7 +43,7 @@ In order to run this script:
 ```
 2) The files generated with generate_scripts.py must have the following arguments:
 ```python
-         --CPFiles=TRUE
+         --CPFiles=True
          --ParticlesperHistory < 1
 ```
 3) After this calibration is fully performed, a txt file is generated containing ernergy/calibration factor dependence. 
