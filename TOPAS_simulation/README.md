@@ -24,8 +24,8 @@ HUtoMaterialSchneider.txt
 |------Patient Folder
        |----Beam Folder
              |----run_beam.txt
-             |----run_CP#.txt
-             |----run_CP#_SP#.txt
+             |----run_CP#.txt  (if args.CPFiles == True)
+             |----run_CP#_SP#.txt  (if args.SPFiles == True)
              
 All of the previous codes are copied from [topasmc/dicom-interface](https://github.com/topasmc/dicom-interface/tree/master/rti/topas/tutorial)
 
