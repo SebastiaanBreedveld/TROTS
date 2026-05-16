@@ -500,8 +500,9 @@ iv:So/RTION/BeamletRange = 2 {start} {end}\n""")
                                 with open(full_path, "w", encoding="utf-8") as f:
                                     f.write(f"""
 includeFile=run_beam.txt
-s:Sc/RTDose/OutputFile = \"{output_name}\"\n
-iv:So/RTION/BeamletRange = 2 {spot} {spot}\n""")
+s:Sc/RTDose/OutputFile = \"{output_name}\"
+iv:So/RTION/BeamletRange = 2 {spot} {spot}
+""")
 
                             acc += num_spots
 
