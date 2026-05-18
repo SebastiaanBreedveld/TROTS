@@ -45,6 +45,7 @@ In order to run this script:
 ```python
          --CPFiles=True
          --ParticlesperHistory < 1
+         --NP=False
 ```
 3) After this calibration is fully performed, a txt file is generated containing ernergy/calibration factor dependence. 
 4) In order to obtain the DICOMs files with NP units, you have to return to writeTROTStoDICOM and add the followings flag to generate-scripts call:
