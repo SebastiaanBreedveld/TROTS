@@ -52,7 +52,7 @@ In order to run this script:
 ```python
           --MU2NPcalibrationFile = "calibration_file.txt"
 ```
-5) After this, the final generate_scripts.py can be rerun using a realistic number of PPH (e.g. 1e5) and set argument:
+5) After this, the final generate_scripts.py can be rerun using a realistic number of PPH (e.g. 1e5) and set arguments:
 ```python
            --CPFiles=False (no longer strictly needed, per-layer are only needed for the MU2NP calibration)
            --NP=True
