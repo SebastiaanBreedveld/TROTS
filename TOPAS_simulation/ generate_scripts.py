@@ -152,7 +152,11 @@ for patient_folder in os.listdir(args.inputPath):
         patient_folder_path = os.path.join(args.OutputPath, f"{patient_folder}")
 
         os.makedirs(patient_folder_path, exist_ok=True)
-
+        if args.NP:
+            rtplan_name='rtplan_NP'
+        else:
+            rtplan_name='rtplan'
+        
         for file in os.listdir(patient_path):
             if file.endswith('plan.dcm'):
                 plan_file_path=os.path.join(patient_path, file)
