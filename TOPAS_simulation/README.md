@@ -54,7 +54,7 @@ In order to run this script:
 ```
 5) After this, the final generate_scripts.py can be rerun using a realistic number of PPH (e.g. 1e5) and set argument:
 ```python
---NP=True
-
+           --NP=True
+```
    
 IMPORTANT: If you later want to compare the TOPAS DVH with the RTDose DVH, the final Dw.bin dose distribution must be scaled by the corresponding PPH value.
