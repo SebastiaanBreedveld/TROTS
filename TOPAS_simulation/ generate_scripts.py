@@ -18,7 +18,7 @@ parser.add_argument("--SPFiles", nargs='?', help="Set to true to write files for
 parser.add_argument("--hlx", nargs='?', help="World's Half Lenght for X axis / cm", default=110.0)
 parser.add_argument("--hly", nargs='?', help="World's Half Lenght for Y axis / cm", default=110.0)
 parser.add_argument("--hlz", nargs='?', help="World's Half Lenght for Z axis / cm", default=110.0)
-
+parser.add_argument("--NP", nargs='?', help="Set to true to use RTPlan with NP instead of MU.", default=False)
 args = parser.parse_args()
 
 #Since Topas has trouble reading Windows directories, we will change the format of the directories to the Linux/WSL one whenever the users system is Windows. 
