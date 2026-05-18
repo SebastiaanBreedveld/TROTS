@@ -228,7 +228,7 @@ includeFile={output_linuxPath}/HUtoMaterialSchneider.txt
 #----------------- Directories  ------------------
 ###################################################  
 #                         
-s:Rt/RTION/PlanFile = "{patient_path_linux}/rtplan.dcm"
+s:Rt/RTION/PlanFile = "{patient_path_linux}/{rtplan_name}.dcm"
 s:Rt/RTION/RTDoseFile = "{patient_path_linux}/rtdose.dcm"
 s:Rt/RTION/CTDirectory = "{patient_path_linux}"
 
