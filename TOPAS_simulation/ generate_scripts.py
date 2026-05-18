@@ -15,9 +15,9 @@ parser.add_argument("-n", "--numberOfThreads", nargs='?', help="By default, TOPA
 parser.add_argument("-s", "--SID", nargs='?', help="Source to Isocenter Distance / cm", default=39.0)
 parser.add_argument("--CPFiles", nargs='?', help="Set to true to write files for each energy layer (Control Point)", default=False)
 parser.add_argument("--SPFiles", nargs='?', help="Set to true to write files for each Spot inside each energy layer (Control Point)", default=False)
-parser.add_argument("--hlx", nargs='?', help="World's Half Lenght for X axis / cm", default=110.0)
-parser.add_argument("--hly", nargs='?', help="World's Half Lenght for Y axis / cm", default=110.0)
-parser.add_argument("--hlz", nargs='?', help="World's Half Lenght for Z axis / cm", default=110.0)
+parser.add_argument("--hlx", nargs='?', help="World's Half Length for X axis / cm", default=110.0)
+parser.add_argument("--hly", nargs='?', help="World's Half Length for Y axis / cm", default=110.0)
+parser.add_argument("--hlz", nargs='?', help="World's Half Length for Z axis / cm. It has to be large enough to fit the patient whatever ImagePatientPosition.z it's located, or otherwise perform translation in TOPAS script to recenter", default=110.0)
 parser.add_argument("--NP", nargs='?', help="Set to true to use RTPlan with NP instead of MU.", default=False)
 args = parser.parse_args()
 
