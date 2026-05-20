@@ -522,7 +522,7 @@ for folder in caseFolders:
                     if  args.MU2NPcalibrationFile :
                         weight = float(mat["solutionX"][rowindex])
                         final_e = get_effective_energy(row[1],row[4],hideRangeShifter,energyRangeTable)
-                        factor = get_MU_to_NP_factor(final_e)
+                        factor = get_MU_to_NP_factor(row[1])
                         controlpointinfo["NP"] = [weight * factor]
                     controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][patientIndex][rowindex][2:4].tolist()
                     controlpointinfo["RangeShifter"] = row[4]
