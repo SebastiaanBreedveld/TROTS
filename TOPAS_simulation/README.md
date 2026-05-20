@@ -73,3 +73,4 @@ This script needs as arguments the PPH of the simulation and input/ouput paths. 
           --DoseBoxLikeCT True
 ```
 The dose will be scaled by the corresponding PPH value used during the simulation.
+This will allow the import of the RTdose of TROTS and TOPAS directly in 3D Slicer and thus enable a side-by-side DVH comparison.
