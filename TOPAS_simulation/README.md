@@ -67,7 +67,7 @@ In order to run this script:
 ```
    
 ## Script convertBINtoRTDOSE.py 
-This script will read the .bin file previously generated and convert it to RTDOSE.dcm format. The .bin file has had to be written with the following arguments (if it was created following this flow, it will already have the correct format):
+This script needs as arguments the PPH of the simulation and input/ouput paths. It will read the .bin file previously generated and convert it to RTDOSE.dcm format. The .bin file has had to be written with the following arguments (if it was created following this workflow, it will already have the correct format):
 ```python
           --MU2NPcalibrationFile = "calibration_file.txt"
           --DoseBoxLikeCT True
