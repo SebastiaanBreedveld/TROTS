@@ -17,6 +17,9 @@ parser.add_argument("--DoseSummationType", nargs='?', help="Type of dose summati
 
 args = parser.parse_args()
 
+if args.OutputDirectory is None:
+    args.OutputDirectory=os.path.dirname(os.path.abspath(args.BinFile))
+
 pph=float(args.ParticlesperHistory)
 
 ct_files = sorted([
