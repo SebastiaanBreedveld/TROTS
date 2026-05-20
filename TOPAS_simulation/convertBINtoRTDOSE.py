@@ -37,7 +37,7 @@ dose *= pph
 expected = nx * ny * nz
 
 if len(dose) != expected:
-    raise ValueError(f"Wrong .bin size: expected {expected}, found {len(dose)}")
+    raise ValueError(f"Wrong .bin size: expected {expected}, found {len(dose)}. Maybe you did not run writeTROTStoDICOM with doseBoxLikeCT set ?")
 dose = dose.reshape((nz, ny, nx))
 
 
