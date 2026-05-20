@@ -106,9 +106,9 @@ seqrt.ReferencedSOPClassUID = pydicom.uid.RTDoseStorage
 seqrt.ReferencedSOPInstanceUID = SOPInstanceUID
 doseds.ReferencedRTPlanSequence.append(seqrt)
 
-print(f"RTDOSE saved in: {args.DICOMDirectory}")
 inputFileNameWithoutExtension = os.path.splitext(os.path.basename(os.path.abspath(args.BinFile)))[0]
 outputFileName = args.OutputDirectory+ '/' + inputFileNameWithoutExtension  + '.dcm'
+print(f"RTDOSE saved in: {outputFileName}")
 if int(pydicom.__version_info__[0]) >= 3:
     doseds.save_as(outputFileName, enforce_file_format=True)
 else:
