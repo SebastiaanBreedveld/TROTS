@@ -470,7 +470,7 @@ for folder in caseFolders:
                         if args.MU2NPcalibrationFile:
                             weight=float(mat["solutionX"][rowindex])
                             factor = get_MU_to_NP_factor(row[1])
-                            controlpointinfo["NP"] .append(weight * factor)
+                            controlpointinfo["NP"].append(weight * factor)
                     else:
                         controlpointinfo["FileIndexEnd"] = rowindex
                         beaminfo["ControlPoints"].append(copy.deepcopy(controlpointinfo))
