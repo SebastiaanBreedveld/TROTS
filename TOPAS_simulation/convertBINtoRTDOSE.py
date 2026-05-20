@@ -9,7 +9,7 @@ from pydicom.sequence import Sequence
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--BinFile",nargs='?',help="Directory of the .bin file.",default="")
+parser.add_argument("--BinFile",nargs='?',help="Full path of the .bin file outputted by TOPAS dose scorer.",default="")
 parser.add_argument("--DICOMDirectory", nargs='?',help="Directory containing CT Files and where RTDOSE will be saved.",default="")
 parser.add_argument("-d", "--ParticlesperHistory", nargs='?', help="Decimation factor of particles in RTplan, or by how much the number of histories is scaled down to have a reasonable computation time", default=1)
 parser.add_argument("--DoseSummationType", nargs='?', help="Type of dose summation: PLAN, BEAM, CONTROL_POINT... ", default="PLAN")
