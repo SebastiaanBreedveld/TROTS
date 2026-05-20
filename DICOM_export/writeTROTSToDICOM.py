@@ -42,6 +42,20 @@ args = parser.parse_args()
 
 pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
 
+
+def get_effective_energy(beam_energy, range_shifter, hideRangeShifter, energyRangeTable):
+    if hideRangeShifter and range_shifter != 0:
+        original_e = float(beam_energy)
+        original_r = get_range_from_energy(original_e, energyRangeTable)
+        wet = range_shifter 
+        final_r = original_r - wet
+        if final_r <= 0:
+            return original_e
+        final_e = float(get_energy_from_range(final_r, energyRangeTable))
+        print(f'original e:{original_e};final e:{final_e}; original r: {original_r}; final r: {final_r}')
+        return final_e
+    return float(beam_energy)   
+
 #Functions to convert energy to range and viceversa
 from scipy.interpolate import interp1d
 
@@ -455,7 +469,8 @@ for folder in caseFolders:
                         controlpointinfo["MetersetWeights"].append(mat["solutionX"][rowindex])
                         if args.MU2NPcalibrationFile:
                             weight=float(mat["solutionX"][rowindex])
-                            factor = get_MU_to_NP_factor(row[1])
+                            final_e = get_effective_energy(row[1],row[4],hideRangeShifter,energyRangeTable)
+                            factor = get_MU_to_NP_factor(final_e)
                             controlpointinfo["NP"] = [weight * factor]
                     else:
                         controlpointinfo["FileIndexEnd"] = rowindex
@@ -469,7 +484,8 @@ for folder in caseFolders:
                         controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
                         if args.MU2NPcalibrationFile:
                             weight = float(mat["solutionX"][rowindex])
-                            factor = get_MU_to_NP_factor(row[1])
+                            final_e = get_effective_energy(row[1],row[4],hideRangeShifter,energyRangeTable)
+                            factor = get_MU_to_NP_factor(final_e)
                             controlpointinfo["NP"] = [weight * factor]
                            
                         
@@ -505,7 +521,8 @@ for folder in caseFolders:
                     controlpointinfo["MetersetWeights"] = [mat["solutionX"][rowindex]]
                     if  args.MU2NPcalibrationFile :
                         weight = float(mat["solutionX"][rowindex])
-                        factor = get_MU_to_NP_factor(row[1])
+                        final_e = get_effective_energy(row[1],row[4],hideRangeShifter,energyRangeTable)
+                        factor = get_MU_to_NP_factor(final_e)
                         controlpointinfo["NP"] = [weight * factor]
                     controlpointinfo["ScanSpotPositions"] = beamlistfolder["BeamList"][patientIndex][rowindex][2:4].tolist()
                     controlpointinfo["RangeShifter"] = row[4]
@@ -754,14 +771,7 @@ for folder in caseFolders:
                             icpoi.RangeShifterSettingsSequence.append(rsSettings)
 
                     if hideRangeShifter and controlpointinfo["RangeShifter"] != 0: 
-                        original_e=float(icpoi.NominalBeamEnergy)
-                        original_r = get_range_from_energy(original_e, energyRangeTable)
-                        wet=beaminfo["RangeShifters"][0]/10
-                        final_r=original_r-wet
-                        if final_r<=0:
-                            final_r = float(original_r)
-                            final_e = float(original_e)
-                        final_e = float(get_energy_from_range(final_r, energyRangeTable))
+                        final_e=get_effective_energy(float(icpoi.NominalBeamEnergy),beaminfo["RangeShifters"][0],hideRangeShifter,energyRangeTable)
                         icpoi.NominalBeamEnergy=format_number_as_ds(final_e)
                     if args.MU2NPcalibrationFile:
                         assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < NPTolerance)
@@ -814,14 +824,7 @@ for folder in caseFolders:
 
                 
                     if  hideRangeShifter and controlpointinfo["RangeShifter"]!=0:
-                        original_e=float(icpoi.NominalBeamEnergy)
-                        original_r = get_range_from_energy(original_e, energyRangeTable)
-                        wet=beaminfo["RangeShifters"][0] / 10 #convert mm in cm
-                        #The new range is the original one with the correction:
-                        final_r=original_r-wet
-                        if final_r<=0:
-                            raise ValueError("Invalid negative range value")
-                        final_e = float(get_energy_from_range(final_r, energyRangeTable))
+                        final_e=get_effective_energy(float(icpoi.NominalBeamEnergy),beaminfo["RangeShifters"][0],hideRangeShifter,energyRangeTable)
                         icpoi.NominalBeamEnergy = format_number_as_ds(final_e)
                     if args.MU2NPcalibrationFile:
                         assert(abs(icpoi.CumulativeMetersetWeight - totalMetersetWeightOfControlPoints) < NPTolerance)
