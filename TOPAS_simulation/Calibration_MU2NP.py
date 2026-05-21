@@ -50,6 +50,8 @@ def extract_binheader(path):
     except FileNotFoundError:
         return "Error: Binheader file not found."
 
+all_beam_calibrations = []
+
 for beamnumber in args.BeamNumber:
     print(f"Working on calibration for Beamnumber: {beamnumber}")
   
@@ -132,6 +134,7 @@ for beamnumber in args.BeamNumber:
     df_calibration['Calibration Factor'] = (df_calibration['Mean Dose_rtdose'] / df_calibration['Mean Dose_topas'])/pph
     df_calibration['Energy'] = df_calibration['CP'].map(cp_to_energy)
     df_calibration = df_calibration.sort_values(by='Energy')
+    all_beam_calibrations.append(df_calibration[['Energy', 'Calibration Factor']])
   
     plt.figure(figsize=(10, 6))
     plt.scatter(df_calibration['Energy'], df_calibration['Calibration Factor'], color='blue', label='Calibration Factor')
@@ -145,3 +148,14 @@ for beamnumber in args.BeamNumber:
     calibration_output_path = os.path.join(args.OutputPath, "calibration_beam{beamnumber}.txt")
     df_calibration.to_csv(calibration_output_path, columns=['Energy', 'Calibration Factor'], index=False, header=False, sep='\t')
 
+if len(args.BeamNumber) > 1 and all_beam_calibrations:
+    print("\nGenerating global calibration file...")
+    df_global_calibration = pd.concat(all_beam_calibrations, ignore_index=True)    
+    df_global_calibration = df_global_calibration.sort_values(by='Energy')
+    
+    #If we have exact same energies, we take the mean value from both calibrations
+    df_global_calibration = df_global_calibration.groupby('Energy', as_index=False).mean()
+
+    global_output_path = os.path.join(args.OutputPath, "global_calibration.txt")
+    df_global_calibration.to_csv(global_output_path, columns=['Energy', 'Calibration Factor'], index=False, header=False, sep='\t')
+    print(f"Global calibration saved successfully at: {global_output_path}")
