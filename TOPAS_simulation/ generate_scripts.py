@@ -345,7 +345,7 @@ dc:So/RTION/CollimatorAngle     = 0 deg
 dc:So/RTION/Iec2DicomAngle      = 0 deg
 dc:So/RTION/GantryAngle         = 0 deg
 dc:So/RTION/PatientSupportAngle = 0 deg
-d:So/RTION/RotIEC2DICOM       = 0.0 deg 
+d:So/RTION/RotIEC2DICOM       = 90.0 deg 
 
 u:So/RTION/ParticlesPerHistory = Rt/RtION/ParticlesPerHistory
 i:Ts/ShowHistoryCountAtInterval = 10000
@@ -459,7 +459,7 @@ b:Sc/RTDose/OutputToConsole = "FALSE"
                         
                     if args.CPFiles:    
                         acc=0
-                        for i, num_spots in enumerate(numb_scanspots):
+                        for i, num_spots in enumerate(numb_scanspots,start=1):
                             start = acc + 1
                             end = acc + num_spots
                             cp_id = i * 2
@@ -475,7 +475,7 @@ iv:So/RTION/BeamletRange = 2 {start} {end}\n""")
                         acc += num_spots
                     if args.SPFiles:
                         acc=0                        
-                        for k,num_spots in enumerate(numb_scanspots):
+                        for k,num_spots in enumerate(numb_scanspots,start=1):
                             for j in range(int(numb_scanspots[k])):
                                 spot=j+1+acc 
                                 act_spot=j+1
