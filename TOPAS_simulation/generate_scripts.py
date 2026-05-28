@@ -213,9 +213,11 @@ for patient_folder in os.listdir(args.inputPath):
                     
                     #Now for each control point, we will extract the number of scan spots and save it in a list, which we will use later to create the files for each control point with the correct number of scan spots
                     numb_scanspots = []
+                    cp_numbers = []
                     for i, cp in enumerate(beam.IonControlPointSequence):
                         if i % 2 == 0 and hasattr(cp, "NumberOfScanSpotPositions") : #hasattr() takes as arguments an object and the name of an attribute, returns True if the object contains that attribute
                             numb_scanspots.append(cp.NumberOfScanSpotPositions)
+                            cp_numbers.append(cp.ControlPointIndex)
 
 
 ###############################################################################
@@ -345,7 +347,7 @@ dc:So/RTION/CollimatorAngle     = 0 deg
 dc:So/RTION/Iec2DicomAngle      = 0 deg
 dc:So/RTION/GantryAngle         = 0 deg
 dc:So/RTION/PatientSupportAngle = 0 deg
-d:So/RTION/RotIEC2DICOM       = 0.0 deg 
+d:So/RTION/RotIEC2DICOM       = 90.0 deg 
 
 u:So/RTION/ParticlesPerHistory = Rt/RtION/ParticlesPerHistory
 i:Ts/ShowHistoryCountAtInterval = 10000
@@ -462,7 +464,7 @@ b:Sc/RTDose/OutputToConsole = "FALSE"
                         for i, num_spots in enumerate(numb_scanspots):
                             start = acc + 1
                             end = acc + num_spots
-                            cp_id = i * 2
+                            cp_id = cp_numbers[i]
                             file_name = f"run_CP{cp_id}.txt"
                             output_name = f"Dw_patient_CP{cp_id}"
                             full_path = os.path.join(beam_folder_path ,file_name)
@@ -472,14 +474,14 @@ b:Sc/RTDose/OutputToConsole = "FALSE"
 s:Sc/RTDose/OutputFile = \"{output_name}\"\n
 iv:So/RTION/BeamletRange = 2 {start} {end}\n""")
                                                 
-                        acc += num_spots
+                            acc += num_spots
                     if args.SPFiles:
                         acc=0                        
                         for k,num_spots in enumerate(numb_scanspots):
                             for j in range(int(numb_scanspots[k])):
                                 spot=j+1+acc 
                                 act_spot=j+1
-                                cp_id=k*2
+                                cp_id=cp_numbers[k]
                                 file_name=f"run_CP{cp_id}_SP{act_spot}.txt"
                                 output_name=f'Dw_patient_CP{cp_id}_SP{act_spot}'
                                 full_path = os.path.join(beam_folder_path ,file_name)

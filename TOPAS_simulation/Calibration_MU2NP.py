@@ -145,17 +145,37 @@ for beamnumber in args.BeamNumber:
     plt.show()
 #    plt.savefig(f'{args.OutputPath}/Calibration_beam{beamnumber}.pdf')
 
-    calibration_output_path = os.path.join(args.OutputPath, "calibration_beam{beamnumber}.txt")
+    calibration_output_path = os.path.join(args.OutputPath, f"calibration_beam{beamnumber}.txt")
     df_calibration.to_csv(calibration_output_path, columns=['Energy', 'Calibration Factor'], index=False, header=False, sep='\t')
 
-if len(args.BeamNumber) > 1 and all_beam_calibrations:
-    print("\nGenerating global calibration file...")
-    df_global_calibration = pd.concat(all_beam_calibrations, ignore_index=True)    
-    df_global_calibration = df_global_calibration.sort_values(by='Energy')
     
-    #If we have exact same energies, we take the mean value from both calibrations
+available_markers = ['o', 's', '^', 'D', 'v', 'X', '*', 'p']
+
+if len(args.BeamNumber) > 1 and all_beam_calibrations:
+    print("\nGenerating global calibration file...")    
+    plt.figure(figsize=(10, 6))
+    
+    for idx, df_beam in enumerate(all_beam_calibrations):
+            
+        marker = available_markers[idx % len(available_markers)]        
+        
+        current_beam = args.BeamNumber[idx]
+        beam_label = f"Beam {current_beam}"        
+        
+        plt.scatter(df_beam['Energy'], df_beam['Calibration Factor'], marker=marker, label=beam_label, s=50)
+                    
+    plt.xlabel('Energy [MeV]')
+    plt.ylabel('Calibration Factor')
+    plt.title('Global Calibration')
+    plt.legend(loc='best') 
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.show()
+    
+    df_global_calibration = pd.concat(all_beam_calibrations, ignore_index=True)    
+    df_global_calibration = df_global_calibration.sort_values(by='Energy')    
     df_global_calibration = df_global_calibration.groupby('Energy', as_index=False).mean()
 
     global_output_path = os.path.join(args.OutputPath, "global_calibration.txt")
     df_global_calibration.to_csv(global_output_path, columns=['Energy', 'Calibration Factor'], index=False, header=False, sep='\t')
+    
     print(f"Global calibration saved successfully at: {global_output_path}")
