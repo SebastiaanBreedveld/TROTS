@@ -336,6 +336,11 @@ matRad_rc;
 %pln.propOpt.optimizer = 'fmincon';
 [resultGUI, optimizer] = matRad_fluenceOptimization(dij, cst, pln);
 qi  = matRad_calcQualityIndicators(cst(nStructures+1:end,:), pln, resultGUI.physicalDose);
+caseNum = regexp(TrotsMatFile, '\d+', 'match', 'once');
+weightFile = fullfile(patientFolder, ['Matlab_Proton' caseNum '_w.txt']);
+fileID = fopen(weightFile, 'w');
+fprintf(fileID, '%.15g\n', resultGUI.wUnsequenced);
+fclose(fileID);
 %matRadGUI; % Open here matRad and showDVH or QI e.g.. Alternatively, use TROTSShowSolution.m with solutionM
 
 %solutionM = resultGUI.wUnsequenced;
