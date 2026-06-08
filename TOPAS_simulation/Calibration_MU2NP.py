@@ -238,8 +238,8 @@ energy_range = np.linspace(np.min(energies), np.max(energies), 100)
 scaling_factors = polyval(energy_range, opt_params)
 c0, c1, c2 = opt_params
 
-texto_polinomio = f"$({fmt_latex(c2)}) \\cdot E^2 + ({fmt_latex(c1)}) \\cdot E + ({fmt_latex(c0)})$"
-plt.plot(energy_range, scaling_factors, label=f'f(E)={texto_polinomio}', color='darkorange', linewidth=2)
+text_polynom = f"$({fmt_latex(c2)}) \\cdot E^2 + ({fmt_latex(c1)}) \\cdot E + ({fmt_latex(c0)})$"
+plt.plot(energy_range, scaling_factors, label=f'f(E)={text_polynom}', color='darkorange', linewidth=2)
 
 plt.title('Global Calibration Curve',fontsize=14,fontweight='bold')
 plt.ticklabel_format(useMathText=True)
