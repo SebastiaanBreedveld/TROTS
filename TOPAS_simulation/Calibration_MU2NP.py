@@ -12,17 +12,19 @@ from pydicom import dcmread
 from lmfit import minimize, Parameters, report_fit
 from numpy.polynomial.polynomial import polyval
 import pandas as pd
-
-
-plt.close("all")
+import h5py
+#plt.close("all")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--TopasFolderPath", nargs='?', help="Directory containing TOPAS rtdoses.", default=".")
-parser.add_argument("-r", "--RTDoseFolderPath", nargs='?', help="Directory  of the DICOM Patient.", default=".")
-parser.add_argument("-o", "--OutputPath", nargs='?', help="Directory where figures and files will be saved.", default=".")
+parser.add_argument("-r", "--RTDoseFolderPath", nargs='?', help="Directory  Directorio del Patient DICOM.", default=".")
+parser.add_argument("-o", "--OutputPath", nargs='?', help="Directorio de salida.", default=".")
 parser.add_argument("-s", "--StructuresPath", nargs='?', help="Directory containing structures nrrd binary labelmaps.", default=".")
-parser.add_argument("-b", "--BeamNumber", type=int, nargs='+', help="A list of beam numbers that are contained in the global plan, format: [BeamNumber_i, ..]", default=[1])
-parser.add_argument("-f", "--SaveFigures",help="Set to True in order to save the generated figures",default=False)
+parser.add_argument("-b", "--BeamNumber", type=int, nargs='+', help="Lista de números de haz.", default=[1])
+parser.add_argument("-f", "--SaveFigures",help="Set to True in order to save the generated Figures",default=False)
+parser.add_argument("-p", "--PatientIdx", type=int, help="Patient index for the TROTS Protons Dataset (from 1 to 20).", default=1) 
+parser.add_argument("-m", "--MatFilePath", help="Directory of the original .mat file named beamlist.", default=".") 
+
 args = parser.parse_args()
 
 SaveFigures = args.SaveFigures if type(args.SaveFigures) == bool else args.SaveFigures == "True"
@@ -73,7 +75,16 @@ def fmt_latex(val):
     exp_clean = exp.replace('+', '') 
     return f"{mantissa} \\times 10^{{{exp_clean}}}"
 
-resultados_globales = []
+
+mat_path = os.path.join(args.MatFilePath, "beamlist.mat")
+if not os.path.exists(mat_path):
+    raise FileNotFoundError(f"Beamlist.mat file not found at {args.MatFilePath}")
+
+with h5py.File(mat_path, 'r') as f:
+    patient_ref = f['BeamList'][args.PatientIdx - 1, 0]
+    patient_matrix = f[patient_ref][:].T
+
+global_sol = []
 
 for beamnumber in args.BeamNumber:
     print(f"PROCESSING BEAM: {beamnumber}")
@@ -98,17 +109,25 @@ for beamnumber in args.BeamNumber:
     max_dose = np.max(full_dose)
     dose_bins = np.linspace(0, max_dose * 1.4, 300) 
     
+    beam_data_mat = patient_matrix[patient_matrix[:, 0] == beamnumber]
+    
+    #We need to extract the energy before applying the RangeShifter 
     cp_to_energy = {}
-    current_energy = None
+    current_energy = float(beam_data_mat[0, 1]) 
+    mat_row_idx = 0
+
     for i, cp_seq in enumerate(beam.IonControlPointSequence):
-        if hasattr(cp_seq, "NominalBeamEnergy"): 
-            current_energy = float(cp_seq.NominalBeamEnergy)
+        if hasattr(cp_seq, "NumberOfScanSpots") and int(cp_seq.NumberOfScanSpots) > 0:
+            num_spots = int(cp_seq.NumberOfScanSpots)
+            if mat_row_idx < len(beam_data_mat):
+                current_energy = round(float(beam_data_mat[mat_row_idx, 1]), 2)
+                mat_row_idx += num_spots
         cp_to_energy[i] = current_energy
 
     beam_dcm = dcmread(beam_path)
     beam_dose = beam_dcm.pixel_array * beam_dcm.DoseGridScaling
     max_dose_beam = np.max(beam_dose)
-    dose_bins = np.linspace(0, max_dose_beam * 1.4, 300) 
+    dose_bins = np.linspace(0, max_dose_beam * 1.35, 300) 
 
     dicom_grids = {}
     cp_procesados = []
@@ -146,18 +165,17 @@ for beamnumber in args.BeamNumber:
                 topas_doses_list.append(topas_grids[cp][global_mask])
                 energies_list.append(energy)
     
-    resultados_globales.append({
+    global_sol.append({
         'energies':energies_list,
         'topas doses':topas_doses_list
         })
     
 df_beam={}
-for i in range(len(resultados_globales)):
-    df_beam[i]=pd.DataFrame.from_dict(resultados_globales[i])
+for i in range(len(global_sol)):
+    df_beam[i]=pd.DataFrame.from_dict(global_sol[i])
 sum_doses=pd.concat(df_beam).groupby('energies').sum().reset_index()
 
-#ahora que tenemoss todas las dosis juntas, calculamos la minimizacion sobre esta dosis
-
+#Now that we have the complete doses together, we minimize over this global dose
 energies = sum_doses['energies'].to_numpy()
 topas_doses_list = sum_doses['topas doses'].to_numpy()
 
@@ -169,8 +187,8 @@ reference_dvh_global = get_dvh(full_dose_global, dose_bins)
 
 params = Parameters()
 params.add('c0', value=0.05, min=-10, max=10, vary=True)
-params.add('c1', value=64000, min=50000, max=70000, vary=True)
-params.add('c2', value=-20, min=-100, max=100, vary=True)
+params.add('c1', value=67000, min=50000, max=90000, vary=True)
+params.add('c2', value=100, min=-100, max=1000, vary=True)
 
 result = minimize(residual1D, params, args=(energies, topas_doses_list, reference_dvh_global, dose_bins), nan_policy='omit', method='Nelder-Mead')
 report_fit(result)
@@ -214,7 +232,6 @@ leg.get_title().set_fontweight('bold')
 if SaveFigures==True:
     plt.savefig(args.OutputPath, "global_dvh.pdf")
 
-#grafica para el polinomio
 plt.figure(figsize=(8, 5))
 
 energy_range = np.linspace(np.min(energies), np.max(energies), 100)
@@ -233,7 +250,6 @@ plt.legend(loc='best',fontsize=10)
 if SaveFigures==True:
     plt.savefig(args.OutputPath, "curve.pdf")
 
-#virtual dvh
 plt.figure(figsize=(8, 5))
 
 dvh_topas_global = get_topas_dvh(result.params, energies, topas_doses_list, dose_bins)
@@ -247,7 +263,7 @@ textstr = '\n'.join((
     r'$c_1=%.2f$' % (c1, ),
     r'$c_2=%.2f$' % (c2, )))
 props = dict(boxstyle='round', facecolor='lavender', alpha=0.5)
-plt.text(65, 85, textstr,fontsize=12, verticalalignment='top', bbox=props)
+plt.text(56, 85, textstr,fontsize=12, verticalalignment='top', bbox=props)
     
 plt.title('DVH for Virtual Organ',fontsize=14,fontweight='bold')
 plt.xlabel('Dose [Gy]',fontsize=12)
@@ -261,10 +277,9 @@ plt.show()
 if SaveFigures==True:
     plt.savefig(args.OutputPath, "virtual_dvh.pdf")
 
-#export values to calibration.txt 
+#Export values to calibration.txt 
 calib_factor=polyval(energies, opt_params)
 df_calibration=pd.DataFrame({'energies':energies,'calib factor': calib_factor})
 
 calibration_output_path = os.path.join(args.OutputPath, "calibration_globalplan.txt")
 df_calibration.to_csv(calibration_output_path,index=False, header=False, sep='\t')
-
