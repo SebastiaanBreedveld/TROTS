@@ -15,12 +15,20 @@ import pandas as pd
 import h5py
 #plt.close("all")
 
+plt.rcParams.update({
+    'font.size': 14,            
+    'axes.titlesize': 16,      
+    'axes.labelsize': 14,       
+    'xtick.labelsize': 13,      
+    'ytick.labelsize': 13,     
+    'legend.fontsize': 12})
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--TopasFolderPath", nargs='?', help="Directory containing TOPAS rtdoses.", default=".")
-parser.add_argument("-r", "--RTDoseFolderPath", nargs='?', help="Directory  Directorio del Patient DICOM.", default=".")
-parser.add_argument("-o", "--OutputPath", nargs='?', help="Directorio de salida.", default=".")
+parser.add_argument("-r", "--RTDoseFolderPath", nargs='?', help="Directory of the DICOM Patient.", default=".")
+parser.add_argument("-o", "--OutputPath", nargs='?', help="Output directory.", default=".")
 parser.add_argument("-s", "--StructuresPath", nargs='?', help="Directory containing structures nrrd binary labelmaps.", default=".")
-parser.add_argument("-b", "--BeamNumber", type=int, nargs='+', help="Lista de números de haz.", default=[1])
+parser.add_argument("-b", "--BeamNumber", type=int, nargs='+', help="Beam number list.", default=[1])
 parser.add_argument("-f", "--SaveFigures",help="Set to True in order to save the generated Figures",default=False)
 parser.add_argument("-p", "--PatientIdx", type=int, help="Patient index for the TROTS Protons Dataset (from 1 to 20).", default=1) 
 parser.add_argument("-m", "--MatFilePath", help="Directory of the original .mat file named beamlist.", default=".") 
@@ -117,8 +125,8 @@ for beamnumber in args.BeamNumber:
     mat_row_idx = 0
 
     for i, cp_seq in enumerate(beam.IonControlPointSequence):
-        if hasattr(cp_seq, "NumberOfScanSpots") and int(cp_seq.NumberOfScanSpots) > 0:
-            num_spots = int(cp_seq.NumberOfScanSpots)
+        if hasattr(cp_seq, "NumberOfScanSpotPositions") and int(cp_seq.NumberOfScanSpotPositions) > 0:
+            num_spots = int(cp_seq.NumberOfScanSpotPositions)
             if mat_row_idx < len(beam_data_mat):
                 current_energy = round(float(beam_data_mat[mat_row_idx, 1]), 2)
                 mat_row_idx += num_spots
@@ -186,9 +194,9 @@ full_dose_global = full_dose[global_mask]
 reference_dvh_global = get_dvh(full_dose_global, dose_bins)
 
 params = Parameters()
-params.add('c0', value=0.05, min=-10, max=10, vary=True)
-params.add('c1', value=67000, min=50000, max=90000, vary=True)
-params.add('c2', value=100, min=-100, max=1000, vary=True)
+params.add('c0', value=0.0, min=0.0, max=500.0, vary=True)
+params.add('c1', value=8.63e3, min=0.0, vary=True)
+params.add('c2', value=3.87e2, min=0.0, vary=True)
 
 result = minimize(residual1D, params, args=(energies, topas_doses_list, reference_dvh_global, dose_bins), nan_policy='omit', method='Nelder-Mead')
 report_fit(result)
@@ -203,6 +211,7 @@ for energy, dose_cp_mask in zip(energies, topas_doses_list):
 
 plt.figure(figsize=(12, 7))
 
+table = []
 for i, item in enumerate(all_masks):
     name = item['organ_name']
     mask = item['mask']
@@ -213,65 +222,98 @@ for i, item in enumerate(all_masks):
     
     organ_dose_dicom = full_dose[mask]
     
+    volume_voxel = int(np.sum(mask))
+    
+    if volume_voxel > 0:
+        mean_dicom = np.mean(organ_dose_dicom)
+        max_dicom = np.max(organ_dose_dicom)
+        min_dicom = np.min(organ_dose_dicom)
+        
+        mean_topas = np.mean(organ_dose_topas)
+        max_topas = np.max(organ_dose_topas)
+        min_topas = np.min(organ_dose_topas)
+    else:
+        mean_dicom = max_dicom = min_dicom = 0
+        mean_topas = max_topas = min_topas = 0
+        
+    table.append({
+        'Organ': name,
+        'Volume (Voxels)': volume_voxel,
+        'Volume (cm^3)': volumen_voxeles*rtdose_cp.PixelSpacing[0]*rtdose_cp.PixelSpacing[1]*rtdose_cp.SliceThickness/1000,
+        'Mean DICOM (Gy)': round(mean_dicom, 2),
+        'Mean TOPAS (Gy)': round(mean_topas, 2),
+        'Max DICOM (Gy)': round(max_dicom, 2),
+        'Max TOPAS (Gy)': round(max_topas, 2),
+        'Min DICOM (Gy)': round(min_dicom, 2),
+        'Min TOPAS (Gy)': round(min_topas, 2)
+    })
     dvh_topas = get_dvh(organ_dose_topas, dose_bins)
     dvh_dicom = get_dvh(organ_dose_dicom, dose_bins)
     
-    color = plt.cm.Set1(i)
+    color = plt.cm.tab10(i)
     
     plt.plot(dose_bins, dvh_dicom, linestyle='--', color=color)
     plt.plot(dose_bins, dvh_topas, label=f'{name}', linestyle='-', color=color)
 
-plt.title('DVH comparison',fontsize=14,fontweight='bold')
-plt.xlabel('Dose [Gy]',fontsize=12)
-plt.ylabel('Volume [%]',fontsize=12)
-plt.xlim(0, max_dose_plan * 1.4)
+df_stats = pd.DataFrame(table)
+plt.title('DVH comparison',fontweight='bold')
+plt.xlabel('Dose [Gy]')
+plt.ylabel('Volume [%]')
+plt.xlim(0, max_dose_plan * 1.35)
 plt.ylim(0, 105)
 plt.grid(True, linestyle=':', alpha=0.6)
-leg = plt.legend(loc='best',title='--- DICOM | ── TOPAS',fontsize=10,title_fontsize=11)
+leg = plt.legend(loc='best',title='--- DICOM | ── TOPAS',title_fontsize=13)
 leg.get_title().set_fontweight('bold')
+
 if SaveFigures==True:
     plt.savefig(args.OutputPath, "global_dvh.pdf")
+    
+stats_output_path = os.path.join(args.OutputPath, "dvh_table.csv")
+df_stats.to_csv(stats_output_path, index=False, sep=';')
 
-plt.figure(figsize=(8, 5))
+plt.figure(figsize=(9, 5))
 
 energy_range = np.linspace(np.min(energies), np.max(energies), 100)
 scaling_factors = polyval(energy_range, opt_params)
 c0, c1, c2 = opt_params
 
 text_polynom = f"$({fmt_latex(c2)}) \\cdot E^2 + ({fmt_latex(c1)}) \\cdot E + ({fmt_latex(c0)})$"
-plt.plot(energy_range, scaling_factors, label=f'f(E)={text_polynom}', color='darkorange', linewidth=2)
+plt.plot(energy_range, scaling_factors, label=f'k(E)={text_polynom}', color='darkorange', linewidth=2)
 
-plt.title('Global Calibration Curve',fontsize=14,fontweight='bold')
+plt.title('Global Calibration Curve',fontweight='bold')
 plt.ticklabel_format(useMathText=True)
-plt.xlabel('Energy [MeV]',fontsize=12)
-plt.ylabel('Calibration factor',fontsize=12)
+plt.xlabel('Energy [MeV]')
+plt.ylabel('Calibration factor (k)')
+plt.tight_layout()
 plt.grid(True, linestyle=':', alpha=0.6)
-plt.legend(loc='best',fontsize=10)
+plt.legend(loc='best')
 if SaveFigures==True:
     plt.savefig(args.OutputPath, "curve.pdf")
 
-plt.figure(figsize=(8, 5))
+plt.figure(figsize=(9, 5))
 
 dvh_topas_global = get_topas_dvh(result.params, energies, topas_doses_list, dose_bins)
 
 plt.plot(dose_bins, reference_dvh_global, label='DICOM', linestyle='--', color='teal', linewidth=2.5)
 plt.plot(dose_bins, dvh_topas_global, label='TOPAS', linestyle='-', color='teal', linewidth=2)
 textstr = '\n'.join((
-    'Fitting method: Nelder-Mead' ,
-    r'$\chi^2/\nu=%.2f$' % (result.redchi, ),
-    r'$c_0=%.2f$' % (c0, ),
-    r'$c_1=%.2f$' % (c1, ),
-    r'$c_2=%.2f$' % (c2, )))
+    'Fitting method: Nelder-Mead',
+    rf'$\chi^2/\nu = {result.redchi:.2f}$',
+    rf'$c_0 = {fmt_latex(c0)}$',
+    rf'$c_1 = {fmt_latex(c1)}$',
+    rf'$c_2 = {fmt_latex(c2)}$'
+))
 props = dict(boxstyle='round', facecolor='lavender', alpha=0.5)
-plt.text(56, 85, textstr,fontsize=12, verticalalignment='top', bbox=props)
-    
-plt.title('DVH for Virtual Organ',fontsize=14,fontweight='bold')
-plt.xlabel('Dose [Gy]',fontsize=12)
-plt.ylabel('Volume [%]',fontsize=12)
-plt.xlim(0, max_dose_plan * 1.4)
+plt.text(56, 85, textstr, verticalalignment='top', bbox=props)    
+   
+plt.title('DVH for Virtual Organ',fontweight='bold')
+plt.xlabel('Dose [Gy]')
+plt.ylabel('Volume [%]')
+plt.xlim(0, max_dose_plan * 1.35)
 plt.ylim(0, 105)
+plt.tight_layout()
 plt.grid(True, linestyle=':', alpha=0.6)
-plt.legend(loc='best',fontsize=10)
+plt.legend(loc='best')
 plt.show()
 
 if SaveFigures==True:
