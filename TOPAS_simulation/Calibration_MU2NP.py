@@ -25,10 +25,10 @@ plt.rcParams.update({
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--TopasFolderPath", nargs='?', help="Directory containing TOPAS rtdoses.", default=".")
-parser.add_argument("-r", "--RTDoseFolderPath", nargs='?', help="Directory  Directorio del Patient DICOM.", default=".")
-parser.add_argument("-o", "--OutputPath", nargs='?', help="Directorio de salida.", default=".")
+parser.add_argument("-r", "--RTDoseFolderPath", nargs='?', help="Directory of the DICOM Patient.", default=".")
+parser.add_argument("-o", "--OutputPath", nargs='?', help="Output directory.", default=".")
 parser.add_argument("-s", "--StructuresPath", nargs='?', help="Directory containing structures nrrd binary labelmaps.", default=".")
-parser.add_argument("-b", "--BeamNumber", type=int, nargs='+', help="Lista de números de haz.", default=[1])
+parser.add_argument("-b", "--BeamNumber", type=int, nargs='+', help="Beam number list.", default=[1])
 parser.add_argument("-f", "--SaveFigures",help="Set to True in order to save the generated Figures",default=False)
 parser.add_argument("-p", "--PatientIdx", type=int, help="Patient index for the TROTS Protons Dataset (from 1 to 20).", default=1) 
 parser.add_argument("-m", "--MatFilePath", help="Directory of the original .mat file named beamlist.", default=".") 
