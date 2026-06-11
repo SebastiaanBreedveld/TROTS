@@ -491,7 +491,7 @@ d:Ge/DetectorRot/TransY = 0. mm
 d:Ge/DetectorRot/TransZ = 0. cm
 d:Ge/DetectorRot/RotX   = 0. deg
 d:Ge/DetectorRot/RotY   = 0. deg
-d:Ge/DetectorRot/RotZ   = 30. deg
+d:Ge/DetectorRot/RotZ   = 90. deg - So/RTION/GantryAngle 
 
 
 s:Ge/Detector1/Parent = "DetectorRot"
