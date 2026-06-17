@@ -56,7 +56,7 @@ How to generate correctly binary labelmaps?
    
    b. Advanced: Exported segments: Visible------Reference volume: (Choose the reference CT volume)
    
-### Simulations
+### Previous Simulations
 In order to run this script:
 1) The files generated with writeTROTStoDICOM.py must have the following arguments:
 ```python
@@ -68,7 +68,7 @@ In order to run this script:
          --ParticlesperHistory < 1
          --NP=False
 ```
-3) After this calibration is fully performed, a txt file is generated containing ernergy/calibration factor dependence. 
+3) After this calibration is fully performed (see CalibrationMU2NP workflow), a txt file is generated containing ernergy/calibration factor dependence. 
 4) In order to obtain the DICOMs files with NP units, you have to return to writeTROTStoDICOM and add the followings flag to generate-scripts call:
 ```python
           --MU2NPcalibrationFile = "calibration_file.txt"
@@ -79,6 +79,18 @@ In order to run this script:
            --NP=True
            --PPH=1e5 (for example)
 ```
+### CalibrationMU2NP Workflow
+1.  Run the script with --DVHCalibrated=False, as the optimization step must be performed first
+2.  Optionally, set virtualOrgan=True to perform the calibration over the sum of all structures. By default, the calibration is performed using the CTV High.
+3.  Outputs:
+    - Calibration curve and calibration file.
+    - Optimization curve together with the selected reference (Virtual Organ or CTV High).
+    - Three plots (one per beam) showing the dose adjustment to the CTV High using the obtained calibration.
+    - One plot comparing the calibrated sum of the three beams with the DICOM reference.
+4. After running writeTROTStoDICOM with -MU2NPcalibrationFile and performing the TOPAS simulations with a large number of PPH, obtaining the calibrated RTDOSE files with convertBIN2RTDOSE, set --DVHCalibrated=True.
+5. Outputs:
+    - Three DVH plots (one per beam) comparing the calibrated solution with the reference.
+    - One complete DVH plot containing the sum of the three beams.
    
 ## Script convertBINtoRTDOSE.py 
 This script needs as arguments the PPH of the simulation and input/ouput paths. It will read the .bin file previously generated and convert it to RTDOSE.dcm format. The .bin file has had to be written with the following arguments (if it was created following this workflow, it will already have the correct format):
