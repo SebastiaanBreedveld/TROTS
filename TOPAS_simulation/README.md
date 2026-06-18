@@ -43,9 +43,10 @@ In order to simulate the full beamlet Range, use run_beam.txt, if you want just 
 In order to run this script:
 
 1. Generate binary labelmaps using Slicer of any desired number of organs. 
-2. Use convertBINtoRTDOSE.py to convert all of the different .bin files generated for each Control Point and save them inside the Patient folder as "RTDose_TOPAS_Beam{beamnumber}".
+2. Run TOPAS for each Control Point inside each beam, since we need the dose deposited by all the different energy layers present in the plan. 
+3. Use convertBINtoRTDOSE.py to convert all of the different .bin files generated for each Control Point and save them inside the Patient folder as "RTDose_TOPAS_Beam{beamnumber}".
    
-A "virtual" organ will be generated with the labelmaps given. A polinomial calibration will be done in order to adjust to this "virtual organ". Afterwards, this calibartion will be performed over the individual organs.
+A "virtual" organ will be generated with the labelmaps given. A polinomial calibration will be done in order to adjust to this "virtual organ". Afterwards, this calibartion will be performed over the individual organs. You are also given the option to use the organ "CTV High" as reference for the calibration instead of this virtual one.
 
 How to generate correctly binary labelmaps?
 1. Open 3DSlicer and load for the Patient being studied the CT and RTSTRUCT.
