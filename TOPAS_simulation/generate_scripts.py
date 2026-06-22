@@ -19,7 +19,14 @@ parser.add_argument("--hlx", nargs='?', help="World's Half Length for X axis / c
 parser.add_argument("--hly", nargs='?', help="World's Half Length for Y axis / cm", default=110.0)
 parser.add_argument("--hlz", nargs='?', help="World's Half Length for Z axis / cm. It has to be large enough to fit the patient whatever ImagePatientPosition.z it's located, or otherwise perform translation in TOPAS script to recenter", default=110.0)
 parser.add_argument("--NP", nargs='?', help="Set to true to use RTPlan with NP instead of MU.", default=False)
+parser.add_argument("--IncludeDetector", help="Set to true to include a LaBr3 detector in the simulation.", default=False)
+
+
 args = parser.parse_args()
+
+
+includeDetector = args.IncludeDetector if type(args.IncludeDetector) == bool else args.IncludeDetector == "True"
+
 
 #Since Topas has trouble reading Windows directories, we will change the format of the directories to the Linux/WSL one whenever the users system is Windows. 
 def convert_path_format(path):
@@ -455,8 +462,148 @@ b:Sc/RTDose/PreCalculateStoppingPowerRatios = "True"
 b:Sc/RTDose/OutputToConsole = "FALSE"
 """
 
+                    detectorTemplate="""
+                    
+####################################################
+#----------------- Detector --------------------
+####################################################
+
+# LaBr3(5% Ce)
+sv:Ma/LaBr3/Components=3 "Lanthanum" "Bromine" "Cerium"
+uv:Ma/LaBr3/Fractions=3 0.39941 0.55059 0.05
+d:Ma/LaBr3/Density=5.08 g/cm3
+s:Ma/LaBr3/DefaultColor="orange"
+
+s:Ge/DetectorTraslation/Type   = "Group"
+s:Ge/DetectorTraslation/Parent = "World"
+#del centro al borde del cuerpo hay 55mm, le sumamos otros 5
+d:Ge/DetectorTraslation/TransX = -260 mm
+d:Ge/DetectorTraslation/TransY = 136 mm
+d:Ge/DetectorTraslation/TransZ = 0. cm
+d:Ge/DetectorTraslation/RotX   = 0. deg
+d:Ge/DetectorTraslation/RotY   = 0. deg
+d:Ge/DetectorTraslation/RotZ   = 0. deg
+
+s:Ge/DetectorRot/Type   = "Group"
+s:Ge/DetectorRot/Parent = "DetectorTraslation"
+d:Ge/DetectorRot/TransX = 0. mm
+d:Ge/DetectorRot/TransY = 0. mm
+d:Ge/DetectorRot/TransZ = 0. cm
+d:Ge/DetectorRot/RotX   = 0. deg
+d:Ge/DetectorRot/RotY   = 0. deg
+d:Ge/DetectorRot/RotZ   = 90. deg - So/RTION/GantryAngle 
+
+
+s:Ge/Detector1/Parent = "DetectorRot"
+s:Ge/Detector1/Type = "TsCylinder"
+s:Ge/Detector1/Material = "LaBr3"
+d:Ge/Detector1/HL = 19.05 mm
+d:Ge/Detector1/RMin = 0 cm
+d:Ge/Detector1/RMax = 12.7 mm
+d:Ge/Detector1/TransX = 0. mm
+d:Ge/Detector1/TransY = 0. mm
+d:Ge/Detector1/TransZ = 0 mm
+d:Ge/Detector1/RotX = 0 deg
+d:Ge/Detector1/RotY = 90 deg
+d:Ge/Detector1/RotZ = 0 deg
+i:Ge/Detector1/RBins = 1
+i:Ge/Detector1/PhiBins = 1
+i:Ge/Detector1/ThetaBins = 1
+
+
+Ts/PauseBeforeSequence = "True"
+Ts/PauseBeforeQuit     = "True"
+
+b:Ts/UseQt = "T"
+s:Gr/MyViewA/Type = "OpenGL"
+d:Gr/MyViewA/Phi = 0. deg
+d:Gr/MyViewA/Theta = 0. deg
+u:Gr/MyViewA/Zoom = 1.5
+s:Gr/MyViewA/ColorBy = "ParticleType"
+b:Gr/MyViewA/IncludeTrajectories = "t"
+b:Gr/MyViewA/IncludeAxes = "true"
+s:Gr/MyViewA/AxesComponent = "World"
+d:Gr/MyViewA/AxesSize = 20.0 cm
+
+#Surface scoring
+s:Sc/D1ocs/Surface = "Detector1/OuterCurvedSurface"
+s:Sc/D1ocs/Quantity = "SurfaceTrackCount"
+s:Sc/D1ocs/Component = "Detector1"
+s:Sc/D1ocs/OutputFile = "D1ocs"
+s:Sc/D1ocs/OutputType = "CSV"
+b:Sc/D1ocs/OutputToConsole = "True"
+s:Sc/D1ocs/IfOutputFileAlreadyExists = "Overwrite"
+d:Sc/D1ocs/OnlyIncludeParticlesWithInitialKEAbove = 0.1 MeV
+sv:Sc/D1ocs/OnlyIncludeParticlesNamed = 1 "gamma"
+sv:Sc/D1ocs/OnlyIncludeIfParticleInteractedInComponent = 1 "Detector1"
+sv:Sc/D1ocs/OnlyIncludeIfParticleOrAncestorNotNamed = 1 "neutron"
+
+s:Sc/D1zps/Surface = "Detector1/ZPlusSurface"
+s:Sc/D1zps/Quantity = "SurfaceTrackCount"
+s:Sc/D1zps/Component = "Detector1"
+s:Sc/D1zps/OutputFile = "D1zps"
+s:Sc/D1zps/OutputType = "CSV"
+b:Sc/D1zps/OutputToConsole = "True"
+s:Sc/D1zps/IfOutputFileAlreadyExists = "Overwrite"
+d:Sc/D1zps/OnlyIncludeParticlesWithInitialKEAbove = 0.1 MeV
+sv:Sc/D1zps/OnlyIncludeParticlesNamed = 1 "gamma"
+sv:Sc/D1zps/OnlyIncludeIfParticleInteractedInComponent = 1 "Detector1"
+sv:Sc/D1zps/OnlyIncludeIfParticleOrAncestorNotNamed = 1 "neutron"
+
+s:Sc/D1zms/Surface = "Detector1/ZMinusSurface"
+s:Sc/D1zms/Quantity = "SurfaceTrackCount"
+s:Sc/D1zms/Component = "Detector1"
+s:Sc/D1zms/OutputFile = "D1zms"
+s:Sc/D1zms/OutputType = "CSV"
+b:Sc/D1zms/OutputToConsole = "True"
+s:Sc/D1zms/IfOutputFileAlreadyExists = "Overwrite"
+d:Sc/D1zms/OnlyIncludeParticlesWithInitialKEAbove = 0.1 MeV
+sv:Sc/D1zms/OnlyIncludeParticlesNamed = 1 "gamma"
+sv:Sc/D1zms/OnlyIncludeIfParticleInteractedInComponent = 1 "Detector1"
+sv:Sc/D1zms/OnlyIncludeIfParticleOrAncestorNotNamed = 1 "neutron"
+
+s:Sc/D1nocs/Surface = "Detector1/OuterCurvedSurface"
+s:Sc/D1nocs/Quantity = "SurfaceTrackCount"
+s:Sc/D1nocs/Component = "Detector1"
+s:Sc/D1nocs/OutputFile = "D1nocs"
+s:Sc/D1nocs/OutputType = "CSV"
+b:Sc/D1nocs/OutputToConsole = "True"
+s:Sc/D1nocs/IfOutputFileAlreadyExists = "Overwrite"
+d:Sc/D1nocs/OnlyIncludeParticlesWithInitialKEAbove = 0.1 MeV
+sv:Sc/D1nocs/OnlyIncludeParticlesNamed = 1 "gamma"
+sv:Sc/D1nocs/OnlyIncludeIfParticleInteractedInComponent = 1 "Detector1"
+sv:Sc/D1nocs/OnlyIncludeIfParticleOrAncestorNamed = 1 "neutron"
+
+s:Sc/D1nzps/Surface = "Detector1/ZPlusSurface"
+s:Sc/D1nzps/Quantity = "SurfaceTrackCount"
+s:Sc/D1nzps/Component = "Detector1"
+s:Sc/D1nzps/OutputFile = "D1nzps"
+s:Sc/D1nzps/OutputType = "CSV"
+b:Sc/D1nzps/OutputToConsole = "True"
+s:Sc/D1nzps/IfOutputFileAlreadyExists = "Overwrite"
+d:Sc/D1nzps/OnlyIncludeParticlesWithInitialKEAbove = 0.1 MeV
+sv:Sc/D1nzps/OnlyIncludeParticlesNamed = 1 "gamma"
+sv:Sc/D1nzps/OnlyIncludeIfParticleInteractedInComponent = 1 "Detector1"
+sv:Sc/D1nzps/OnlyIncludeIfParticleOrAncestorNamed = 1 "neutron"
+
+s:Sc/D1nzms/Surface = "Detector1/ZMinusSurface"
+s:Sc/D1nzms/Quantity = "SurfaceTrackCount"
+s:Sc/D1nzms/Component = "Detector1"
+s:Sc/D1nzms/OutputFile = "D1nzms"
+s:Sc/D1nzms/OutputType = "CSV"
+b:Sc/D1nzms/OutputToConsole = "True"
+s:Sc/D1nzms/IfOutputFileAlreadyExists = "Overwrite"
+d:Sc/D1nzms/OnlyIncludeParticlesWithInitialKEAbove = 0.1 MeV
+sv:Sc/D1nzms/OnlyIncludeParticlesNamed = 1 "gamma"
+sv:Sc/D1nzms/OnlyIncludeIfParticleInteractedInComponent = 1 "Detector1"
+sv:Sc/D1nzms/OnlyIncludeIfParticleOrAncestorNamed = 1 "neutron"
+                   
+                    """
+
                     with open(os.path.join(beam_folder_path, "run_beam.txt"), "w", encoding="utf-8") as f:
                         f.write(beamTemplate+planTemplate)
+                        if includeDetector==True:
+                            f.write(detectorTemplate)
                         f.write(f"s:Sc/RTDose/OutputFile = \"Dw_patient_PPH{args.ParticlesperHistory}\"\n")
                         
                     if args.CPFiles:    
@@ -469,10 +616,27 @@ b:Sc/RTDose/OutputToConsole = "FALSE"
                             output_name = f"Dw_patient_CP{cp_id}"
                             full_path = os.path.join(beam_folder_path ,file_name)
                             with open(full_path, "w", encoding="utf-8") as f:
-                                f.write(f"""
-                                includeFile=run_beam.txt
-s:Sc/RTDose/OutputFile = \"{output_name}\"\n
-iv:So/RTION/BeamletRange = 2 {start} {end}\n""")
+                                cp_text = f"""
+includeFile=run_beam.txt
+
+s:Sc/RTDose/OutputFile = "{output_name}"
+
+iv:So/RTION/BeamletRange = 2 {start} {end}
+"""
+
+                                if includeDetector:
+                                    cp_text += f"""
+s:Sc/D1ocs/OutputFile   = "D1ocs_CP{cp_id}"
+s:Sc/D1zps/OutputFile  = "D1zps_CP{cp_id}"
+s:Sc/D1zms/OutputFile  = "D1zms_CP{cp_id}"
+
+s:Sc/D1nocs/OutputFile  = "D1nocs_CP{cp_id}"
+s:Sc/D1nzps/OutputFile  = "D1nzps_CP{cp_id}"
+s:Sc/D1nzms/OutputFile  = "D1nzms_CP{cp_id}"
+"""
+
+                                f.write(cp_text)
+
                                                 
                             acc += num_spots
                     if args.SPFiles:
