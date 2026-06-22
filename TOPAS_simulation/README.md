@@ -43,20 +43,21 @@ In order to simulate the full beamlet Range, use run_beam.txt, if you want just 
 In order to run this script:
 
 1. Generate binary labelmaps using Slicer of any desired number of organs. 
-2. Use convertBINtoRTDOSE.py to convert all of the different .bin files generated for each Control Point and save them inside the Patient folder as "RTDose_TOPAS_Beam{beamnumber}".
+2. Run TOPAS for each Control Point inside each beam, since we need the dose deposited by all the different energy layers present in the plan. 
+3. Use convertBINtoRTDOSE.py to convert all of the different .bin files generated for each Control Point and save them inside the Patient folder as "RTDose_TOPAS_Beam{beamnumber}".
    
-A "virtual" organ will be generated with the labelmaps given. A polinomial calibration will be done in order to adjust to this "virtual organ". Afterwards, this calibartion will be performed over the individual organs.
+A "virtual" organ will be generated with the labelmaps given. A polinomial calibration will be done in order to adjust to this "virtual organ". Afterwards, this calibartion will be performed over the individual organs. You are also given the option to use the organ "CTV High" as reference for the calibration instead of this virtual one.
 
 How to generate correctly binary labelmaps?
 1. Open 3DSlicer and load for the Patient being studied the CT and RTSTRUCT.
 2. Go to "Segmentations" and enable visibility just for the desired organ.
 3. In export/import models and labelmaps choose:
    
-   a. Operation: Export------Output type: Labelmap------Output node: Export to new labelmap
+   a. Operation: Export------Output type: Labelmap------Output node: Export to new labelmap. This will generate an NRRD file.
    
    b. Advanced: Exported segments: Visible------Reference volume: (Choose the reference CT volume)
    
-### Simulations
+### Previous Simulations
 In order to run this script:
 1) The files generated with writeTROTStoDICOM.py must have the following arguments:
 ```python
@@ -68,7 +69,7 @@ In order to run this script:
          --ParticlesperHistory < 1
          --NP=False
 ```
-3) After this calibration is fully performed, a txt file is generated containing ernergy/calibration factor dependence. 
+3) After this calibration is fully performed (see CalibrationMU2NP workflow), a txt file is generated containing energy-dependent calibration factor. 
 4) In order to obtain the DICOMs files with NP units, you have to return to writeTROTStoDICOM and add the followings flag to generate-scripts call:
 ```python
           --MU2NPcalibrationFile = "calibration_file.txt"
@@ -79,6 +80,19 @@ In order to run this script:
            --NP=True
            --PPH=1e5 (for example)
 ```
+### CalibrationMU2NP Workflow
+1.  Run the script with --DVHCalibrated=False, as the optimization step must be performed first
+     Note that the script has been only tested with Patient1.
+2.  Optionally, set virtualOrgan=True to perform the calibration over the sum of all structures. By default, the calibration is performed using the CTV High.
+3.  Outputs:
+    - Calibration curve and calibration file.
+    - Optimization curve together with the selected reference (Virtual Organ or CTV High).
+    - Three plots (one per beam) showing the dose adjustment to the CTV High using the obtained calibration.
+    - One plot comparing the calibrated sum of the three beams with the DICOM reference.
+4. After running writeTROTStoDICOM with -MU2NPcalibrationFile and performing the TOPAS simulations with a large number of PPH eg 1e5, obtain the calibrated RTDOSE files with convertBIN2RTDOSE, and rerun current script with flag --DVHCalibrated=True.
+5. Outputs:
+    - Three DVH plots (one per beam) comparing the calibrated solution with the reference.
+    - One complete DVH plot containing the sum of the three beams.
    
 ## Script convertBINtoRTDOSE.py 
 This script needs as arguments the PPH of the simulation and input/ouput paths. It will read the .bin file previously generated and convert it to RTDOSE.dcm format. The .bin file has had to be written with the following arguments (if it was created following this workflow, it will already have the correct format):
