@@ -224,7 +224,7 @@ for patient_folder in os.listdir(args.inputPath):
                     for i, cp in enumerate(beam.IonControlPointSequence):
                         if i % 2 == 0 and hasattr(cp, "NumberOfScanSpotPositions") : #hasattr() takes as arguments an object and the name of an attribute, returns True if the object contains that attribute
                             numb_scanspots.append(cp.NumberOfScanSpotPositions)
-                            cp_numbers.append(cp.ControlPointIndex) # ?
+                            cp_numbers.append(cp.ControlPointIndex)
 
 
 ###############################################################################
