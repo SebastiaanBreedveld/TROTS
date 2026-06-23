@@ -10,7 +10,7 @@ That script must have been compiled with the following arguments:
 --rtdose True 
 --hideRangeShifter True 
 --DoseBoxLikeCT True
---DoseControlPoints [((BeamNumber_i,ControlPoint_i))] (using an external code that prints print(f'({beam_number},{cp_id}),') ) 
+--DoseControlPoints [((BeamNumber_i,ControlPoint_i))] (use the external 'print_CP.py' in order to print the list ({beam_number},{cp_id})) 
 #optional if wanting to compare spot by spot:
 --DoseBeamSpots [(BeamNumber_i,ControlPoint_i,BeamSpotNumber_i), ...]
 ```
