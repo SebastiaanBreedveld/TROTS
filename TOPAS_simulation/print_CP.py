@@ -21,12 +21,7 @@ for patient_folder in os.listdir(args.inputPath):
                     beam_number = beam.BeamNumber
                     print(f'Copy and paste the following control points for {patient_folder} beam {beam_number}\n')
                     print('[')
-                    #For each control point, we will extract the number of scan spots and print it in a list
-                    numb_scanspots = []
-                    cp_numbers = []
                     for i, cp in enumerate(beam.IonControlPointSequence):
                         if i % 2 == 0 and hasattr(cp, "NumberOfScanSpotPositions") : 
-                            numb_scanspots.append(cp.NumberOfScanSpotPositions)
-                            cp_numbers.append(cp.ControlPointIndex) 
                             print(f'({beam_number},{i}),')
                     print(']')
