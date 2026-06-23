@@ -224,7 +224,7 @@ for patient_folder in os.listdir(args.inputPath):
                     for i, cp in enumerate(beam.IonControlPointSequence):
                         if i % 2 == 0 and hasattr(cp, "NumberOfScanSpotPositions") : #hasattr() takes as arguments an object and the name of an attribute, returns True if the object contains that attribute
                             numb_scanspots.append(cp.NumberOfScanSpotPositions)
-                            cp_numbers.append(cp.ControlPointIndex)
+                            cp_numbers.append(cp.ControlPointIndex)                             
 
 
 ###############################################################################
@@ -450,7 +450,10 @@ b:Ge/Patient/IgnoreInconsistentFrameOfReferenceUID = "True"
 #b:Ge/Patient/IsVisible = "True"
 #s:Ge/Patient/DrawingStyle = "FullWireFrame"
 sv:Ge/Patient/DicomModalityTags = 1 "CT"
+"""
 
+                    if not includeDetector:
+                        scorerTemplate="""
 ####################################################
 #----------------- Scorers --------------------
 ####################################################
@@ -604,7 +607,9 @@ sv:Sc/D1nzms/OnlyIncludeIfParticleOrAncestorNamed = 1 "neutron"
                         f.write(beamTemplate+planTemplate)
                         if includeDetector==True:
                             f.write(detectorTemplate)
-                        f.write(f"s:Sc/RTDose/OutputFile = \"Dw_patient_PPH{args.ParticlesperHistory}\"\n")
+                        else:
+                            f.write(scorerTemplate)
+                            f.write(f"s:Sc/RTDose/OutputFile = \"Dw_patient_PPH{args.ParticlesperHistory}\"\n")
                         
                     if args.CPFiles:    
                         acc=0
@@ -616,12 +621,8 @@ sv:Sc/D1nzms/OnlyIncludeIfParticleOrAncestorNamed = 1 "neutron"
                             output_name = f"Dw_patient_CP{cp_id}"
                             full_path = os.path.join(beam_folder_path ,file_name)
                             with open(full_path, "w", encoding="utf-8") as f:
-                                cp_text = f"""
+                                cp_text = """
 includeFile=run_beam.txt
-
-s:Sc/RTDose/OutputFile = "{output_name}"
-
-iv:So/RTION/BeamletRange = 2 {start} {end}
 """
 
                                 if includeDetector:
@@ -633,6 +634,13 @@ s:Sc/D1zms/OutputFile  = "D1zms_CP{cp_id}"
 s:Sc/D1nocs/OutputFile  = "D1nocs_CP{cp_id}"
 s:Sc/D1nzps/OutputFile  = "D1nzps_CP{cp_id}"
 s:Sc/D1nzms/OutputFile  = "D1nzms_CP{cp_id}"
+"""
+                                else:
+                                    cp_text+=f"""
+                                    
+s:Sc/RTDose/OutputFile = "{output_name}"
+
+iv:So/RTION/BeamletRange = 2 {start} {end}
 """
 
                                 f.write(cp_text)
@@ -648,14 +656,7 @@ s:Sc/D1nzms/OutputFile  = "D1nzms_CP{cp_id}"
                                 cp_id=cp_numbers[k]
                                 file_name=f"run_CP{cp_id}_SP{act_spot}.txt"
                                 output_name=f'Dw_patient_CP{cp_id}_SP{act_spot}'
-                                full_path = os.path.join(beam_folder_path ,file_name)
-                                with open(full_path, "w", encoding="utf-8") as f:
-                                    f.write(f"""
-includeFile=run_beam.txt
-s:Sc/RTDose/OutputFile = \"{output_name}\"
-iv:So/RTION/BeamletRange = 2 {spot} {spot}
-""")
-
+                                 
                             acc += num_spots
 
     print(f"Finished processing patient folder: {patient_folder} \n\n")
