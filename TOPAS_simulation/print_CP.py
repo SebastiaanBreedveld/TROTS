@@ -16,7 +16,11 @@ for patient_folder in os.listdir(args.inputPath):
         print(f"Processing patient folder: {patient_folder}")
         cp_file = os.path.join(patient_path, "cp_file.txt")
         sp_file = os.path.join(patient_path, "sp_file.txt")
-
+#Since we are using 'append' let's firts clean up the files previously written 
+        if printSP: 
+            with open(sp_file, "w", encoding="utf-8") as f: f.write('')  
+        else:
+            with open(cp_file, "w", encoding="utf-8") as f: f.write('')
         for file in os.listdir(patient_path):
             if file.endswith('plan.dcm'):
                 plan_file_path=os.path.join(patient_path, file)
