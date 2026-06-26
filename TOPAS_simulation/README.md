@@ -36,6 +36,12 @@ HUtoMaterialSchneider.txt
              
 All of the previous codes are copied from [topasmc/dicom-interface tutorials](https://github.com/topasmc/dicom-interface/tree/master/rti/topas/tutorial)
 
+In order to study the proton range, a LaBr<sub>3</sub> detector can be included. If you set: 
+```python
+--IncludeDetector True
+```
+The detector will be aligned with the incident beam following [Compact Method for Proton Range Verification Based on Coaxial Prompt Gamma-Ray Monitoring: A Theoretical Study](https://ieeexplore.ieee.org/document/8770297/). In order to have reasonable computational time, only csv files are created. 
+
 ### Simulations 
 In order to simulate the full beamlet Range, use run_beam.txt, if you want just one control point (energy layer), choose the correct run_CP#.txt, lastly, if you want to run just one scan spot from the energy layer, run_CP#_SP#.txt                             
 
@@ -102,3 +108,11 @@ This script needs as arguments the PPH of the simulation and input/ouput paths. 
 ```
 The dose will be scaled by the corresponding PPH value used during the simulation.
 This will allow the import of the RTdose of TROTS and TOPAS directly in 3D Slicer and thus enable a side-by-side DVH comparison.
+
+## Script detector_counts_plots.py 
+In order to run this script, generate_scripts.py has had to be run with:
+```python
+--IncludeDetector True
+--CPFiles=True
+```
+After running TOPAS for all the Control Points, this script will read the csv files generated an create 4 different plots, 3 corresponding to the surfaces defined for the detector (Z plus, Z minus and outer curves surface), and one that sums up all of the previous surfaces. In each graph we will compare the counts for the ancestors type of the gammas detected (either proton or other). 

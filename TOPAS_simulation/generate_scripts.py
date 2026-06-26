@@ -539,7 +539,7 @@ s:Sc/D1ocs/IfOutputFileAlreadyExists = "Overwrite"
 d:Sc/D1ocs/OnlyIncludeParticlesWithInitialKEAbove = 0.1 MeV
 sv:Sc/D1ocs/OnlyIncludeParticlesNamed = 1 "gamma"
 sv:Sc/D1ocs/OnlyIncludeIfParticleInteractedInComponent = 1 "Detector1"
-sv:Sc/D1ocs/OnlyIncludeIfParticleOrAncestorNotNamed = 1 "neutron"
+sv:Sc/D1ocs/OnlyIncludeIfParticleOrAncestorNotNamed = 1 "proton"
 
 s:Sc/D1zps/Surface = "Detector1/ZPlusSurface"
 s:Sc/D1zps/Quantity = "SurfaceTrackCount"
@@ -551,7 +551,7 @@ s:Sc/D1zps/IfOutputFileAlreadyExists = "Overwrite"
 d:Sc/D1zps/OnlyIncludeParticlesWithInitialKEAbove = 0.1 MeV
 sv:Sc/D1zps/OnlyIncludeParticlesNamed = 1 "gamma"
 sv:Sc/D1zps/OnlyIncludeIfParticleInteractedInComponent = 1 "Detector1"
-sv:Sc/D1zps/OnlyIncludeIfParticleOrAncestorNotNamed = 1 "neutron"
+sv:Sc/D1zps/OnlyIncludeIfParticleOrAncestorNotNamed = 1 "proton"
 
 s:Sc/D1zms/Surface = "Detector1/ZMinusSurface"
 s:Sc/D1zms/Quantity = "SurfaceTrackCount"
@@ -563,7 +563,7 @@ s:Sc/D1zms/IfOutputFileAlreadyExists = "Overwrite"
 d:Sc/D1zms/OnlyIncludeParticlesWithInitialKEAbove = 0.1 MeV
 sv:Sc/D1zms/OnlyIncludeParticlesNamed = 1 "gamma"
 sv:Sc/D1zms/OnlyIncludeIfParticleInteractedInComponent = 1 "Detector1"
-sv:Sc/D1zms/OnlyIncludeIfParticleOrAncestorNotNamed = 1 "neutron"
+sv:Sc/D1zms/OnlyIncludeIfParticleOrAncestorNotNamed = 1 "proton"
 
 s:Sc/D1nocs/Surface = "Detector1/OuterCurvedSurface"
 s:Sc/D1nocs/Quantity = "SurfaceTrackCount"
@@ -575,7 +575,7 @@ s:Sc/D1nocs/IfOutputFileAlreadyExists = "Overwrite"
 d:Sc/D1nocs/OnlyIncludeParticlesWithInitialKEAbove = 0.1 MeV
 sv:Sc/D1nocs/OnlyIncludeParticlesNamed = 1 "gamma"
 sv:Sc/D1nocs/OnlyIncludeIfParticleInteractedInComponent = 1 "Detector1"
-sv:Sc/D1nocs/OnlyIncludeIfParticleOrAncestorNamed = 1 "neutron"
+sv:Sc/D1nocs/OnlyIncludeIfParticleOrAncestorNamed = 1 "proton"
 
 s:Sc/D1nzps/Surface = "Detector1/ZPlusSurface"
 s:Sc/D1nzps/Quantity = "SurfaceTrackCount"
@@ -587,7 +587,7 @@ s:Sc/D1nzps/IfOutputFileAlreadyExists = "Overwrite"
 d:Sc/D1nzps/OnlyIncludeParticlesWithInitialKEAbove = 0.1 MeV
 sv:Sc/D1nzps/OnlyIncludeParticlesNamed = 1 "gamma"
 sv:Sc/D1nzps/OnlyIncludeIfParticleInteractedInComponent = 1 "Detector1"
-sv:Sc/D1nzps/OnlyIncludeIfParticleOrAncestorNamed = 1 "neutron"
+sv:Sc/D1nzps/OnlyIncludeIfParticleOrAncestorNamed = 1 "proton"
 
 s:Sc/D1nzms/Surface = "Detector1/ZMinusSurface"
 s:Sc/D1nzms/Quantity = "SurfaceTrackCount"
@@ -599,7 +599,7 @@ s:Sc/D1nzms/IfOutputFileAlreadyExists = "Overwrite"
 d:Sc/D1nzms/OnlyIncludeParticlesWithInitialKEAbove = 0.1 MeV
 sv:Sc/D1nzms/OnlyIncludeParticlesNamed = 1 "gamma"
 sv:Sc/D1nzms/OnlyIncludeIfParticleInteractedInComponent = 1 "Detector1"
-sv:Sc/D1nzms/OnlyIncludeIfParticleOrAncestorNamed = 1 "neutron"
+sv:Sc/D1nzms/OnlyIncludeIfParticleOrAncestorNamed = 1 "proton"
                    
                     """
 
