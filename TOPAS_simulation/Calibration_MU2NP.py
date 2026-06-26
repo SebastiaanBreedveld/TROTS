@@ -217,7 +217,16 @@ if DVHCalibrated:
         organ_dose_topas = total_calibrated_topas_dose[mask]
         organ_dose_dicom = full_dose[mask]
         voxel_volume = int(np.sum(mask))
-        
+        # We will also compute the chi-square value for each organ to assess the goodness of fit
+        # The degrees of freedom should be the number of valid voxels minus the number of fitted parameters (3)
+        red_chi_sq = 0
+        chi_sq=0
+        valid_mask = (organ_dose_topas > 0) & (organ_dose_dicom > 0)
+        valid_count = np.count_nonzero(valid_mask)
+        if valid_count > 3:
+            nu = valid_count 
+            chi_sq = np.sum(((organ_dose_topas[valid_mask] - organ_dose_dicom[valid_mask]) ** 2) / organ_dose_dicom[valid_mask])
+            red_chi_sq = np.sum(((organ_dose_topas[valid_mask] - organ_dose_dicom[valid_mask]) ** 2) / organ_dose_dicom[valid_mask]) / nu
         if voxel_volume > 0:
             mean_dicom = np.mean(organ_dose_dicom)
             max_dicom = np.max(organ_dose_dicom)
@@ -226,11 +235,15 @@ if DVHCalibrated:
             mean_topas = np.mean(organ_dose_topas)
             max_topas = np.max(organ_dose_topas)
             min_topas = np.min(organ_dose_topas)            
-            mean_error_rel = ((mean_topas - mean_dicom) / mean_dicom * 100) if mean_dicom > 0 else 0
+            mean_error_rel = (abs(mean_topas - mean_dicom) / mean_dicom * 100) if mean_dicom > 0 else 0
+            max_error_rel = (abs(max_topas - max_dicom) / max_dicom * 100) if max_dicom > 0 else 0
+            min_error_rel = (abs(min_topas - min_dicom) / min_dicom * 100) if min_dicom > 0 else 0
         else:
             mean_dicom = max_dicom = min_dicom = 0
             mean_topas = max_topas = min_topas = 0
             mean_error_rel = 0
+            max_error_rel = 0
+            min_error_rel = 0
             
         table.append({
             'Organ': name,
@@ -241,8 +254,13 @@ if DVHCalibrated:
             'Mean Error (%)': round(mean_error_rel, 2),
             'Max DICOM (Gy)': round(max_dicom, 2),
             'Max TOPAS (Gy)': round(max_topas, 2),
+            'Max Error (%)': round(max_error_rel, 2),
             'Min DICOM (Gy)': round(min_dicom, 2),
-            'Min TOPAS (Gy)': round(min_topas, 2)
+            'Min TOPAS (Gy)': round(min_topas, 2),
+            'Min Error (%)': round(min_error_rel, 2),
+            'Chi-square':round(chi_sq, 2),
+            'nu (degrees of freedom)':nu,
+            'Chi-square reduced':round(red_chi_sq, 2)
         })
         
         dvh_topas = get_dvh(organ_dose_topas, dose_bins)
