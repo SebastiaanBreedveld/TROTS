@@ -854,6 +854,7 @@ for folder in caseFolders:
             
             # write rtdose
             if not args.rtdose or (type(args.rtdose) == str and args.rtdose=='False'):
+                print('DICOM files writen to ' + outFolder)
                 continue
             print('Working on rtdose...')
             meta = pydicom.Dataset()
