@@ -16,9 +16,11 @@ Usage
 
 2. Set CASE to the patient number you want to run (1–20).
 
-3. Run inside 3D Slicer's (version > XX.YY) Python console (requires the SlicerRT
+3. Run inside 3D Slicer's (version >= 5.13.0-2026-06-30) Python console (requires the SlicerRT
    ExternalBeamPlanning module to be loaded for the C++ IPOPT solver):
        exec(open('/path/to/compare_vs_matlab.py').read())
+
+  Note: C++ IPOPT solver inside SlicerRT may use MUMPS (default), or pardisomkl if Intel oneAPI MKL is installed, or HSL MA57 if installed (https://www.hsl.rl.ac.uk/download/MA57/3.11.3/). In contrast, matRad uses MA57 by default.
 
    All config variables (CASE, TROTS_DIR, MATLAB_W_DIR, OUTPUT_DIR, …) can be
    set as globals before calling exec() — the script picks up pre-defined values
