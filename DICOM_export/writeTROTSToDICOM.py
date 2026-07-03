@@ -320,8 +320,11 @@ for folder in caseFolders:
             rc.ROIDisplayColor = [int(c*255) for c in COLOR_PALETTE[structIndex]]
             rc.ReferencedROINumber = structIndex + 1
             rc.ContourSequence = Sequence()
+            oldZ = 0
             for sliceIndex in range(0, len(mat['patient']['Contours'][0])):
                 if mat['patient']['Contours'][0][sliceIndex][structIndex] != None:
+                    if oldZ == 1e9:
+                        print('Warning: there were missing slices inbetween')
                     keyHole = args.keyHole if type(args.keyHole)==bool else args.keyHole=='True'# True is needed by RayStation since CLOSEDPLANAR_XOR is not supported there. Both options lead to the same artefacts in Slicer3D: https://discourse.slicer.org/t/closedplanar-xor-visualization-artefact-with-holes-2d/43589/3
                     if keyHole:
                         singleContours = mat['patient']['Contours'][0][sliceIndex][structIndex]
@@ -333,6 +336,10 @@ for folder in caseFolders:
                             cdata = cdata[:-1]
                         nPoints = cdata.shape[0]
                         Z = [mat['patient']['Offset'][2] + resolutionZ*sliceIndex] * nPoints
+                        # print( mat['patient']['Offset'][2] + resolutionZ*sliceIndex - oldZ)
+                        # if oldZ != 0 and abs(oldZ - (mat['patient']['Offset'][2] + resolutionZ*sliceIndex) + 2.4992) > 0.001:
+                        #    print('Bad diff', oldZ - (mat['patient']['Offset'][2] + resolutionZ*sliceIndex))
+                        oldZ = mat['patient']['Offset'][2] + resolutionZ*sliceIndex
                         cdata = np.c_[cdata, Z]
                         cont = Dataset()
                         cont.ContourGeometricType = 'CLOSED_PLANAR' # TODO inner/outer? https://dicom.innolitics.com/ciods/rt-structure-set/roi-contour/30060039/30060040/30060050
@@ -363,6 +370,10 @@ for folder in caseFolders:
                             ci.ReferencedSOPInstanceUID = ctsopids[sliceIndex]
                             cont.ContourImageSequence.append(ci)
                             rc.ContourSequence.append(cont)
+                else:
+                    if oldZ != 0 and oldZ != 1e9:
+                        oldZ = 1e9
+                    
             rds.ROIContourSequence.append(rc)
         
         if int(pydicom.__version_info__[0]) >= 3:
