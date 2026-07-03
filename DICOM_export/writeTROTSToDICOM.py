@@ -52,7 +52,7 @@ def get_effective_energy(beam_energy, range_shifter, hideRangeShifter, energyRan
         if final_r <= 0:
             return original_e
         final_e = float(get_energy_from_range(final_r, energyRangeTable))
-        print(f'original e:{original_e};final e:{final_e}; original r: {original_r}; final r: {final_r}')
+        # print(f'original e:{original_e};final e:{final_e}; original r: {original_r}; final r: {final_r}')
         return final_e
     return float(beam_energy)   
 
