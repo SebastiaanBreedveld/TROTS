@@ -16,7 +16,7 @@ Usage
 
 2. Set CASE to the patient number you want to run (1–20).
 
-3. Run inside 3D Slicer's (version >= 5.13.0-2026-06-30) Python console (requires the SlicerRT
+3. Run inside 3D Slicer's (version > 5.13.0-2026-06-30) Python console (requires the SlicerRT
    ExternalBeamPlanning module to be loaded for the C++ IPOPT solver):
        exec(open('/path/to/compare_vs_matlab.py').read())
 
