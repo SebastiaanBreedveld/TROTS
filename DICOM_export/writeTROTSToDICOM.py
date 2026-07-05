@@ -121,9 +121,9 @@ for folder in caseFolders:
         patientIndexInt = int(patientFolder.split('_')[1])
         outFolder = args.outputPath + "/DICOMs/" + folder + "/" + patientFolder + "/"
         os.makedirs(outFolder, exist_ok=True)
-        resolutionX = mat['patient']['Resolution'][0];
-        resolutionY = mat['patient']['Resolution'][1];
-        resolutionZ = mat['patient']['Resolution'][2];
+        resolutionX = mat['patient']['Resolution'][0]
+        resolutionY = mat['patient']['Resolution'][1]
+        resolutionZ = mat['patient']['Resolution'][2]
         ctshape = mat['patient']['CT'].shape
         nRowsCT =  ctshape[1] # DICOM Rows, goes with y, is index 1 because of how matrix is stored
         nColumnsCT = ctshape[0] # DICOM Columns, goes with x, is index 0 because of how matrix is stored
@@ -337,8 +337,10 @@ for folder in caseFolders:
                         nPoints = cdata.shape[0]
                         Z = [mat['patient']['Offset'][2] + resolutionZ*sliceIndex] * nPoints
                         # print( mat['patient']['Offset'][2] + resolutionZ*sliceIndex - oldZ)
-                        # if oldZ != 0 and abs(oldZ - (mat['patient']['Offset'][2] + resolutionZ*sliceIndex) + 2.4992) > 0.001:
-                        #    print('Bad diff', oldZ - (mat['patient']['Offset'][2] + resolutionZ*sliceIndex))
+                        #if oldZ != 0 and abs(oldZ - (mat['patient']['Offset'][2] + resolutionZ*sliceIndex) + 2.4991836734693877) > 0.00001:
+                        #    print('Bad diff', oldZ - (mat['patient']['Offset'][2] + resolutionZ*sliceIndex)+ 2.4991836734693877)
+                        #if oldZ != 0:
+                        #    print(format_number_as_ds(oldZ - (mat['patient']['Offset'][2] + resolutionZ*sliceIndex)+ 2.4991836734693877))
                         oldZ = mat['patient']['Offset'][2] + resolutionZ*sliceIndex
                         cdata = np.c_[cdata, Z]
                         cont = Dataset()
