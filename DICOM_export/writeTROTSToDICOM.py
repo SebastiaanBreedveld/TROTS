@@ -76,7 +76,7 @@ def get_energy_from_range(range_target, table):
 if args.MU2NPcalibrationFile:
     calibration_df = pd.read_csv(
         args.MU2NPcalibrationFile,
-        sep='\s+',
+        sep=r'\s+',
         names=['Energy', 'Factor']
     )
 
