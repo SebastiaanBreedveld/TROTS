@@ -37,6 +37,7 @@ parser.add_argument("--DoseBoxLikeCT", nargs='?', help="Set to true to override 
 parser.add_argument("--useRelativeGridOffset",nargs='?',help="Set to True to use relative Grid Frame Offset Vector (case a of Grid Frame Offset Vector Attribute in DICOM standard, see section C.8.8.3.2, strongly recommended)",default=True)
 parser.add_argument("--hideRangeShifter", nargs='?',help="Set to True to remove the physical Range Shifter and change the energy instead based on the water equivalent thickness",default=False)
 parser.add_argument("--MU2NPcalibrationFile",  help="Name of the calibration file. Providing a file enables conversion from Monitor Units to Number of Particles. The format of the file should be a txt with two columns: first one energy, second one scaling factor by which to multiply MU to get number of protons, spaces separated.", default="")
+parser.add_argument("--clipMinHU", nargs='?', help="Whether to clip out-of-field-of-view CT numbers (-1024) to air (-1000)", default=False)
 
 args = parser.parse_args()
 
@@ -220,7 +221,10 @@ for folder in caseFolders:
             ds.RescaleType = "HU"
             ds.PixelRepresentation = 1
 
-            ds.PixelData = np.array(np.swapaxes(mat['patient']['CT'][:,:,sliceIndex],0,1)+1024).tobytes()
+            pixelData = np.swapaxes(mat['patient']['CT'][:,:,sliceIndex],0,1)
+            if args.clipMinHU or (type(args.clipMinHU) == str and args.clipMinHU=='True'):
+                pixelData[pixelData == -1024] = -1000
+            ds.PixelData = np.array(pixelData+1024).tobytes()
             if int(pydicom.__version_info__[0]) >= 3:
                 ds.save_as(outFolder+'CT_'+str(sliceIndex).zfill(3)+".dcm", enforce_file_format = True)
             else:
