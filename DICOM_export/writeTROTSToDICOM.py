@@ -17,7 +17,7 @@ import pandas as pd
 parser = argparse.ArgumentParser()
 parser.add_argument("--Manufacturer", nargs='?', help="The name of the manufacturer to be saved in the DICOMs", default="")
 parser.add_argument("--ManufacturerModelName", nargs='?', help="The name of the manufacturer model to be saved in the DICOMs", default="")
-parser.add_argument("--InstitutionName", nargs='?', help="The name of the Institution to be saved in the DICOMs", default="")
+parser.add_argument("--InstitutionName", nargs='?', help="The name of the Institution to be saved in the DICOMs", default="TROTs")
 parser.add_argument("--ReferringPhysicianName", nargs='?', help="The name of the referring physician to be saved in the DICOMs", default="")
 parser.add_argument("--OperatorsName", nargs='?', help="The name of the operator to be saved in the DICOMs", default="")
 parser.add_argument("--TreatmentMachineName", nargs='?', help="The name of the treatment machine name to be saved in the DICOMs", default="TROTS")
@@ -37,7 +37,7 @@ parser.add_argument("--DoseBoxLikeCT", nargs='?', help="Set to true to override 
 parser.add_argument("--useRelativeGridOffset",nargs='?',help="Set to True to use relative Grid Frame Offset Vector (case a of Grid Frame Offset Vector Attribute in DICOM standard, see section C.8.8.3.2, strongly recommended)",default=True)
 parser.add_argument("--hideRangeShifter", nargs='?',help="Set to True to remove the physical Range Shifter and change the energy instead based on the water equivalent thickness",default=False)
 parser.add_argument("--MU2NPcalibrationFile",  help="Name of the calibration file. Providing a file enables conversion from Monitor Units to Number of Particles. The format of the file should be a txt with two columns: first one energy, second one scaling factor by which to multiply MU to get number of protons, spaces separated.", default="")
-
+parser.add_argument("--MinHU", help="Caps the minimum Hounsfield unit of the output DICOM file.", nargs="?", default=-1024)
 args = parser.parse_args()
 
 pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
@@ -220,7 +220,7 @@ for folder in caseFolders:
             ds.RescaleType = "HU"
             ds.PixelRepresentation = 1
 
-            ds.PixelData = np.array(np.swapaxes(mat['patient']['CT'][:,:,sliceIndex],0,1)+1024).tobytes()
+            ds.PixelData = np.maximum(np.array(np.swapaxes(mat['patient']['CT'][:,:,sliceIndex],0,1)+1024), args.MinHU).tobytes()
             if int(pydicom.__version_info__[0]) >= 3:
                 ds.save_as(outFolder+'CT_'+str(sliceIndex).zfill(3)+".dcm", enforce_file_format = True)
             else:
@@ -407,7 +407,7 @@ for folder in caseFolders:
             rtds.AccessionNumber = rds.AccessionNumber
             rtds.Modality = "RTPLAN"
             rtds.Manufacturer = args.Manufacturer
-            # rtds.InstitutionName = args.InstitutionName # Optional
+            rtds.InstitutionName = args.InstitutionName
             rtds.SpecificCharacterSet='ISO_IR 100' # Optional
             rtds.InstanceCreationDate='20250708' # Optional
             rtds.InstanceCreationTime='112329.000000' # Optional
