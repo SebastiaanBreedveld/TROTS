@@ -15,7 +15,7 @@
 % See https://github.com/e0404/matRad/issues/695
 
 clear, clc, close all
-patientFolder = '/tmp/'; % with TROTS mat file
+patientFolder = '/opt/Protons/'; % with TROTS mat file
 TrotsMatFile = patientFolder + "Protons_01.mat";
 load(TrotsMatFile);
 
@@ -337,7 +337,7 @@ matRad_rc;
 [resultGUI, optimizer] = matRad_fluenceOptimization(dij, cst, pln);
 qi  = matRad_calcQualityIndicators(cst(nStructures+1:end,:), pln, resultGUI.physicalDose);
 caseNum = regexp(TrotsMatFile, '\d+', 'match', 'once');
-weightFile = fullfile(patientFolder, ['Matlab_Proton' caseNum '_w.txt']);
+weightFile = fullfile(patientFolder, strjoin(['matRad_Protons_' caseNum '_w.txt'],''));
 fileID = fopen(weightFile, 'w');
 fprintf(fileID, '%.15g\n', resultGUI.wUnsequenced);
 fclose(fileID);

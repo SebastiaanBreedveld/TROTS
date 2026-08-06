@@ -10,7 +10,7 @@ Usage
 1. For each case you want to compare against MATLAB, run the TROTS patient in
    matRad using readTROTSPatient.m (see
    https://github.com/SebastiaanBreedveld/TROTS/blob/master/matRad_import/readTROTSPatient.m).
-   The script automatically saves the optimized weights to Matlab_ProtonXX_w.txt
+   The script automatically saves the optimized weights to matRad_Protons_XX_w.txt
    in the patient folder; point MATLAB_W_DIR at that folder.
    If no weight file is present for a case the MATLAB comparison is skipped.
 
@@ -26,16 +26,16 @@ Usage
    set as globals before calling exec() — the script picks up pre-defined values
    and falls back to the defaults in the Configuration section otherwise.
    You can also edit the defaults directly in the section below and just call exec().
-       CASE = 3
-       TROTS_DIR    = r'E:\data\TROTS\Protons'
-       MATLAB_W_DIR = r'E:\data\TROTS\Protons'
-       OUTPUT_DIR   = r'E:\data\TROTS\output'
+       CASE = 1
+       TROTS_DIR    = r'/opt/Protons'
+       MATLAB_W_DIR = r'/opt/Protons'
+       OUTPUT_DIR   = r'/opt/Protons'
        exec(open('/path/to/compare_vs_matlab.py').read())
 
 Outputs (written to OUTPUT_DIR)
 --------------------------------
-   dvh_comparison_TROTSProtonXX.png  — per-structure DVH plots + objective table
-   dvh_comparison_TROTSProtonXX.txt  — mean-dose table and constraint-violation summary
+   dvh_comparison_TROTS_Protons_XX.png  — per-structure DVH plots + objective table
+   dvh_comparison_TROTS_Protons_XX.txt  — mean-dose table and constraint-violation summary
 """
 
 import time
@@ -50,7 +50,7 @@ import scipy.sparse as sps
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 
-CASE              = globals().get('CASE',              1)      # 1–20 → Proton 01 … Proton 20
+CASE                  = globals().get('CASE',              1)      # 1–20 → Protons_01 … Protons_20
 
 # Optimizer settings
 MAX_ITER              = globals().get('MAX_ITER',              10000)
@@ -61,13 +61,13 @@ LINEAR_SOLVER         = globals().get('LINEAR_SOLVER',         'mumps') # 'pardi
 CONSTRAINT_EPS        = globals().get('CONSTRAINT_EPS',        1e-3)   # logsumexp smoothing for hard constraints
 
 # Edit these three paths to match your local setup:
-TROTS_DIR    = Path(globals().get('TROTS_DIR',    r'path/to/TROTS/Protons'))
-MATLAB_W_DIR = Path(globals().get('MATLAB_W_DIR', r'path/to/matlab_weights'))
-OUTPUT_DIR   = Path(globals().get('OUTPUT_DIR',   r'path/to/output'))
+TROTS_DIR    = Path(globals().get('TROTS_DIR',    r'/opt/Protons'))
+MATLAB_W_DIR = Path(globals().get('MATLAB_W_DIR', r'/opt/Protons'))
+OUTPUT_DIR   = Path(globals().get('OUTPUT_DIR',   r'/opt/Protons'))
 
-CASE_LABEL = f'TROTS Proton {CASE:02d}'
+CASE_LABEL = f'TROTS_Protons_{CASE:02d}'
 MAT_FILE   = TROTS_DIR   / f'Protons_{CASE:02d}.mat'
-MATLAB_W   = MATLAB_W_DIR / f'Matlab_Proton{CASE:02d}_w.txt'
+MATLAB_W   = MATLAB_W_DIR / f'matRad_Protons_{CASE:02d}_w.txt'
 OUT_FILE   = OUTPUT_DIR  / f'dvh_comparison_{CASE_LABEL.replace(" ", "")}.png'
 TXT_FILE   = OUT_FILE.with_suffix('.txt')
 
@@ -438,7 +438,7 @@ print(f"\nDVH comparison saved to: {OUT_FILE}")
 
 # ─── 7. Text summary ─────────────────────────────────────────────────────────
 
-_summary.append(f"\nObjective  f(w) = sum_i penalty_i * sum(max(+/-diff,0)^2)/n  [C++ formula]:")
+_summary.append("\nObjective  f(w) = sum_i penalty_i * sum(max(+/-diff,0)^2)/n  [C++ formula]:")
 _summary.append(f"  {label_ours:30s}  f = {f_ours_val:.6f}")
 if has_matlab:
     _summary.append(f"  {label_matlab:30s}  f = {f_mat_val:.6f}")
@@ -451,7 +451,7 @@ if constraint_terms:
     if has_matlab:
         viol_pairs.insert(1, (label_matlab, constraint_violations(w_matlab, constraint_terms)))
     viol_pairs.append(('TROTS reference', viol_trots))
-    _summary.append(f"\nHard constraint violations (logsumexp, >0.01 Gy threshold):")
+    _summary.append("\nHard constraint violations (logsumexp, >0.01 Gy threshold):")
     for label, viol_list in viol_pairs:
         n_v = sum(1 for _, _, v, _ in viol_list if v > 0.01)
         mv  = max(v for _, _, v, _ in viol_list)
@@ -464,7 +464,7 @@ _col_w = 10
 _matlab_col = f"  {'MATLAB':>10s}" if has_matlab else ''
 _header = (f"{'Structure':35s}  {'C++ IPOPT':>10s}{_matlab_col}  {'TROTS ref':>10s}"
            + ''.join(f"  {c:>{_col_w}s}" for c in _used_cols))
-_summary.append(f"\nMean dose summary (Gy):")
+_summary.append("\nMean dose summary (Gy):")
 _summary.append(_header)
 _summary.append("-" * len(_header))
 for name, did in DVH_STRUCTURES.items():
