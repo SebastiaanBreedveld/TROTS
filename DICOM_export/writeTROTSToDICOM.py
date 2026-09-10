@@ -871,7 +871,7 @@ for folder in caseFolders:
             
             # write rtdose
             if not args.rtdose or (type(args.rtdose) == str and args.rtdose=='False'):
-                print('DICOM files writen to ' + outFolder)
+                print('DICOM files written to ' + outFolder)
                 continue
             print('Working on rtdose...')
             meta = pydicom.Dataset()
@@ -1211,4 +1211,4 @@ for folder in caseFolders:
                 else:
                     bsdoseds.save_as(full_save_path, write_like_original=False)
 
-        print('DICOM files writen to ' + outFolder)
+        print('DICOM files written to ' + outFolder)
