@@ -1,6 +1,7 @@
 import argparse
 import os
 import mat73
+import math
 import numpy as np
 import copy
 import pydicom
@@ -42,7 +43,7 @@ parser.add_argument("--clipMinHU", nargs='?', help="Whether to clip out-of-field
 args = parser.parse_args()
 
 pydicom.config.settings.writing_validation_mode = pydicom.config.RAISE
-
+sig2fwhm = 2.0*math.sqrt(2.0*math.log(2.0))
 
 def get_effective_energy(beam_energy, range_shifter, hideRangeShifter, energyRangeTable):
     if hideRangeShifter and range_shifter != 0:
@@ -772,7 +773,7 @@ for folder in caseFolders:
                         icpoi.ScanSpotMetersetWeights = controlpointinfo["MetersetWeights"]
                     sigma1 = np.interp(controlpointinfo["BeamEnergy"], energyRangeTable[:, 0], beamSigmas[:, 0])
                     sigma2 = np.interp(controlpointinfo["BeamEnergy"], energyRangeTable[:, 0], beamSigmas[:, 1])
-                    icpoi.ScanningSpotSize = [sigma1,sigma2]
+                    icpoi.ScanningSpotSize = [sigma1*sig2fwhm,sigma2*sig2fwhm]
                     icpoi.NumberOfPaintings = 1
                     if hideRangeShifter==False: #Range Shifter unhidden
                         if((beaminfo["ConstantRangeShifter"]==False) or ((controlpointinfo["ControlPointNumber"]==0) and (controlpointinfo["RangeShifter"]!=0))):
@@ -820,7 +821,7 @@ for folder in caseFolders:
                         icpoi.ScanSpotMetersetWeights = [0.0 for i in range(len(controlpointinfo["MetersetWeights"]))]
 
                     icpoi.ScanSpotPositionMap = controlpointinfo["ScanSpotPositions"]
-                    icpoi.ScanningSpotSize = [sigma1,sigma2]
+                    icpoi.ScanningSpotSize = [sigma1*sig2fwhm,sigma2*sig2fwhm]
                     icpoi.NumberOfPaintings = 1
                     if hideRangeShifter==False:
                         if(beaminfo["ConstantRangeShifter"]==False):
