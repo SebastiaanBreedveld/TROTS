@@ -18,7 +18,7 @@ import pandas as pd
 parser = argparse.ArgumentParser()
 parser.add_argument("--Manufacturer", nargs='?', help="The name of the manufacturer to be saved in the DICOMs", default="")
 parser.add_argument("--ManufacturerModelName", nargs='?', help="The name of the manufacturer model to be saved in the DICOMs", default="")
-parser.add_argument("--InstitutionName", nargs='?', help="The name of the Institution to be saved in the DICOMs", default="")
+parser.add_argument("--InstitutionName", nargs='?', help="The name of the Institution to be saved in the DICOMs", default="IFIC")
 parser.add_argument("--ReferringPhysicianName", nargs='?', help="The name of the referring physician to be saved in the DICOMs", default="")
 parser.add_argument("--OperatorsName", nargs='?', help="The name of the operator to be saved in the DICOMs", default="")
 parser.add_argument("--TreatmentMachineName", nargs='?', help="The name of the treatment machine name to be saved in the DICOMs", default="TROTS")
@@ -412,7 +412,7 @@ for folder in caseFolders:
             rtds.AccessionNumber = rds.AccessionNumber
             rtds.Modality = "RTPLAN"
             rtds.Manufacturer = args.Manufacturer
-            # rtds.InstitutionName = args.InstitutionName # Optional
+            rtds.InstitutionName = args.InstitutionName 
             rtds.SpecificCharacterSet='ISO_IR 100' # Optional
             rtds.InstanceCreationDate='20250708' # Optional
             rtds.InstanceCreationTime='112329.000000' # Optional
@@ -634,6 +634,15 @@ for folder in caseFolders:
                     sufficients = mat['problem']['Sufficient'][mat['problem']['Name'].index(probleminfo[key]["roiName"])]
                     if sufficients is not None and type(sufficients) == np.ndarray:
                         doseReference.TargetPrescriptionDose = format_number_as_ds(float(sufficients))
+                    else: # backup search
+                        for idx in range(len(mat['problem']['Sufficient'])):
+                            if mat['problem']['Name'][idx] == probleminfo[key]["roiName"]:
+                                if not mat['problem']['IsConstraint'][idx]:
+                                    sufficients = mat['problem']['Sufficient'][idx]
+                                    if sufficients is not None and type(sufficients) == np.ndarray:
+                                        doseReference.TargetPrescriptionDose = format_number_as_ds(float(mat['problem']['Sufficient'][idx] ))
+                                        break
+
                     # else:
                     #     if probleminfo[key]["Max"] != '':
                     #         doseReference.TargetPrescriptionDose = format_number_as_ds(float(probleminfo[key]["Max"]))
@@ -998,9 +1007,11 @@ for folder in caseFolders:
                 doseds.save_as(outFolder + 'rtdose.dcm', write_like_original = False)
 
             beamnrs = [beaminfo["BeamNumber"] for beaminfo in currentbeamlist]
+            
             if args.DoseBeamNumber is None:
                 args.DoseBeamNumber = beamnrs
             for beamNumber in args.DoseBeamNumber:
+                beamNumber = int(beamNumber)
                 if not beamNumber in beamnrs:
                     print('Wrong beam number', beamNumber)
                     continue
